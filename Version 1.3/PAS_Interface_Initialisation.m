@@ -21,7 +21,7 @@ ai3.TerminalConfig = 'SingleEnded';
 % as this makes it simpler to pass them as a function argument.
 s.Rate = 1500;
 
-% Specify triggered capture timespan, in seconds
+% Specify triggered capture timespan, in secondss
 capture.TimeSpan = 1;    % \/\/ À CONVERTIR DANS PARAMS PLUS TARD \/\/
 
 % Specify continuous data plot timespan, in seconds

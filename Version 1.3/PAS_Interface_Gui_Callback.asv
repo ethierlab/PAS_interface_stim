@@ -707,7 +707,7 @@ if get(hObject, 'value')
                 Mean_EMG_Level = BufferSelect(WindowEMGLast:WindowEMGFirst,2);
                 OvershootLimit = sum(Mean_EMG_Level<=EMG_Window_High)+sum(Mean_EMG_Level>=EMG_Window_Low);
                 TimeLimitEMG = toc - EMGProbe_StartTime;
-                if  OvershootLimit <= 1
+                if  Mean_EMG_Level <= EMG_Window_High && Mean_EMG_Level >= EMG_Window_Low
                     pulse_sent = true;
                     outputSingleScan(sProbeEMG,[1,0]);
                     pause(0.05);
