@@ -73,7 +73,7 @@ uicontrol('style', 'text', 'string', 'Before Stim (ms) ',...
     'units', 'pixels', 'position', [57 492 60 25]);
 
 % Create an editable text field for the After Stim recording
-hGui.AfterStim = uicontrol('style', 'edit', 'string', '1500',...
+hGui.AfterStim = uicontrol('style', 'edit', 'string', '500',...
     'units', 'pixels', 'position', [125 465 50 25]);
  
 % Le texte au-dessus de hGui.AfterStim
@@ -325,7 +325,7 @@ function startManual(hObject,~,~)
 if get(hObject, 'value')
     hGui = guidata(gcbo);
     set(hGui.StatusText, 'String', 'Manual cortex stimulation in progress.');
-    persistent AllDataCollected
+    persistent AllDataCollected WindowEMG
     global BufferSelect SelectionState
     
     % Initialisation de la session selon la sélection choisie, les checkbox
@@ -355,8 +355,9 @@ if get(hObject, 'value')
     if SelectionState == 1 && get(hGui.CheckCortexStim,'value') == 1 && get(hGui.CheckMuscleStim,'value') == 0
         pulse_sent = false;
         while pulse_sent == false % Ajouter la condition de fermeture fenêtre
-            Mean_EMG_Level = mean(BufferSelect(WindowEMGLast:WindowEMGFirst,2));
-            if  Mean_EMG_Level <= EMG_Window_High && Mean_EMG_Level >= EMG_Window_Low
+            WindowEMG = BufferSelect(WindowEMGLast:WindowEMGFirst,2);
+            OvershootLimit = sum(WindowEMG>=EMG_Window_High)+sum(WindowEMG<=EMG_Window_Low);
+            if OvershootLimit < 1
                 pulse_sent = true;
                 outputSingleScan(sManual,[1,0]);
                 pause(0.05);
@@ -671,7 +672,7 @@ function startProbeEMG(hObject,~,~)
 if get(hObject, 'value')
     hGui = guidata(gcbo);
     set(hGui.StatusText, 'String', 'Probe stimulation in progress.');
-    persistent Mean_EMG_Level AllDataCollected
+    persistent WindowEMG AllDataCollected
     global BufferSelect SelectionState
     
     % Enregistrement dans des variables le contenu des cases de la
@@ -684,12 +685,25 @@ if get(hObject, 'value')
     AfterCapture = str2double(hGui.AfterStim.String)/1000;
     WindowEMGFirst = length(BufferSelect(:,1));
     WindowEMGLast = round(length(BufferSelect(:,1)) - str2double(hGui.EMGTime.String)*hGui.SourceRate/1000);
-  
+    
+    % Vérification des temps s'ils sont réalistes ou pas
+    if get(hGui.RandomProbe,'value')
+        if LMinProbe < (BeforeCapture + AfterCapture)
+            err('La valeur minimale des trains aléatoire est plus petite que la fênetre capturée (avant et après capture)')
+        end
+    else
+        if InterPulseProbe < (BeforeCapture + AfterCapture)
+            err('La durée de inter-train est plus petite que la fênetre capturée (avant et après capture)')
+        end
+    end
+    
     % Initialisation d'une sesion pour ajouter les sorties digitales
     sProbeEMG = daq.createSession('ni');
     addDigitalChannel(sProbeEMG,'Dev1', 'Port0/Line0', 'OutputOnly');
     addDigitalChannel(sProbeEMG,'Dev1', 'Port0/Line1', 'OutputOnly');
     
+    % Boucle while afin de calculer en continue le code s'il atteint les
+    % conditions ou pas
     tic
     nb_pulsesDone = 0;
     
@@ -704,21 +718,19 @@ if get(hObject, 'value')
             hGui.NumPushTimeTotal = hGui.NumPushTimeSingleTrain + hGui.NumPushTimeProbeTrain + hGui.NumPushTimeProbeEMGTrain;
             set(hGui.StatusText, 'String', sprintf('Cortical stimulation dependant of the EMG. Probe %d in progress.',nb_pulsesDone));
             while pulse_sent == false
-                Mean_EMG_Level = BufferSelect(WindowEMGLast:WindowEMGFirst,2);
-                OvershootLimit = sum(Mean_EMG_Level<=EMG_Window_High)+sum(Mean_EMG_Level>=EMG_Window_Low);
+                WindowEMG = BufferSelect(WindowEMGLast:WindowEMGFirst,2);
+                OvershootLimit = sum(WindowEMG>=EMG_Window_High)+sum(WindowEMG<=EMG_Window_Low);
                 TimeLimitEMG = toc - EMGProbe_StartTime;
-                if  OvershootLimit <= 1
+                if  OvershootLimit < 1
                     pulse_sent = true;
                     outputSingleScan(sProbeEMG,[1,0]);
-                    pause(0.05);
                     outputSingleScan(sProbeEMG,[0,0]);
-                    fprintf('Baseline mean is %.5f \n',Mean_EMG_Level)
                     set(hGui.StatusText, 'String', sprintf('Cortical stimulation dependant of the EMG. Probe %d done.',nb_pulsesDone));
                     stop(sProbeEMG);
                 elseif TimeLimitEMG >= 30
                     pulse_sent = true;
-                    outputSingleScan(sPAS,[1,0]);
-                    outputSingleScan(sPAS,[0,0]);
+                    outputSingleScan(sProbeEMG,[1,0]);
+                    outputSingleScan(sProbeEMG,[0,0]);
                     set(hGui.StatusText, 'String', 'Burst sent after 30 seconds of waiting without appropriate EMG levels');
                     stop(sProbeEMG);
                 else
@@ -727,7 +739,22 @@ if get(hObject, 'value')
             end
             
             % Pause afin d'acquérir toutes les données nécessaires à la capture
-            pause(AfterCapture*1.2);
+            TimeSpentStimulating = toc - EMGProbe_StartTime;
+            
+            if get(hGui.RandomProbe,'value')
+                if TimeSpentStimulating > LMinProbe
+                    pause(AfterCapture);
+                else
+                    ecart_stim = round((LMinProbe+(LMaxProbe-LMinProbe).*rand(1))) - TimeSpentStimulating;
+                    pause(ecart_stim);
+                end
+            else
+                if TimeSpentStimulating > InterPulseProbe
+                    pause(AfterCapture);
+                else
+                    pause(InterPulseProbe-TimeSpentStimulating);
+                end
+            end
             
             AllDataCollected = BufferSelect(:,:);
              
@@ -744,11 +771,20 @@ if get(hObject, 'value')
             % Déterminer la valeur en temps où le trigger s'est produit
             MomentStimTime = AllDataCollected(MomentStimTrigRise,1);
             
-            % Paramètres de dataEMG pour enregistrer les données selon les specs
-            % voulues
+            % Paramètres de dataEMG pour enregistrer la capture voulue
             FirstEMG = round(MomentStimTrigRise - BeforeCapture*hGui.SourceRate);
             LastEMG = round(MomentStimTrigRise + AfterCapture*hGui.SourceRate);
-            dataEMGProbeEMG = AllDataCollected(FirstEMG:LastEMG,:);
+            
+            % Vérification si le dernier EMG de la capture est plus grand ou
+            % non que la matrice AllDataCollected, sinon, c'est spécifier
+            % sans signaler d'erreur.
+            if LastEMG > length(AllDataCollected(:,1))
+                EMGOverCount = LastEMG - length(AllDataCollected(:,1));
+                fprintf('Problème de calcul au train %d. La capture après le train est couper de %d données \n',nb_pulsesDone,EMGOverCount)
+                dataEMGProbeEMG = AllDataCollected(FirstEMG:length(AllDataCollected(:,1)),:);
+            else
+                dataEMGProbeEMG = AllDataCollected(FirstEMG:LastEMG,:);
+            end
             
             % Applique la rectification temporel de la capture
             if get(hGui.ZeroRectification,'value')
@@ -756,7 +792,7 @@ if get(hObject, 'value')
             end
             
             % Sauvegarder les données dans un cell array qui incrémente selon le
-            % nombre de fois que le bouton est pressé
+            % nombre de capture générés
             hGui.DataResponseProbeEMG{hGui.NumPushTimeProbeEMGTrain,2} = dataEMGProbeEMG;
             ProbePushTimeString = num2str(hGui.NumPushTimeProbeEMGTrain);
             hGui.DataTable.Data(hGui.NumPushTimeTotal,3) = cellstr(strcat('ProbeEMG %',ProbePushTimeString));
@@ -769,12 +805,14 @@ if get(hObject, 'value')
                 pause(InterPulseProbe - TimeProcessOneBurst)
             else
                 TimeAfterLimit = TimeProcessOneBurst - InterPulseProbe;
-                fprintf('Time after the inter pulse limit is %.3f\n',TimeAfterLimit);
+                fprintf('Time after the inter pulse limit is %.3f for probe %d \n',TimeAfterLimit,nb_pulsesDone);
             end
-            
         else
             error('Choose the appropriate selection that corresponds with the stimulation patern')
         end
+        
+        % Faire le code des deux autres sélections par la suite.
+        
     end
     % Reset du bouton et mise à jour des données gui
     set(hObject, 'value', 0);
