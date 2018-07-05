@@ -32,7 +32,7 @@ hGui.LivePlotEMG = plot(0, zeros(1, numel(s.Channels(1:4))));
 xlabel('Time (s)');
 ylabel('Voltage (V)');
 title('Continious acquisition data (EMG)');
-legend({'Cortex', 'Muscle','Trig Cortex', 'Trig Muscle'},'Units', 'Pixels', 'Position', [1190 650 120 70]); %get(s.Channels(1:4), 'ID')
+legend({'EMG', '? (AI1)','Trigger Cortex', 'Trigger Muscle'},'Units', 'Pixels', 'Position', [1190 650 120 70]); %get(s.Channels(1:4), 'ID')
 set(hGui.Axes1, 'Units', 'Pixels', 'Position',  [490 450 820 190]);
 
 % Deuxième plot : les trigger envoyés
@@ -136,15 +136,6 @@ hGui.EMGWindowLow = uicontrol('style', 'edit', 'string', '-50',...
 uicontrol('style', 'text', 'string', 'Low limit (mV) ', 'HorizontalAlignment', 'Center',...
     'units', 'pixels', 'position', [188 545 54 30]);
 
-
-% % Create an editable text field for the maximun time between each probe
-% hGui.TrainLenghtProbe = uicontrol('style', 'edit', 'string', '20',...
-%     'units', 'pixels', 'position', [190 400 50 25]);
-% 
-% % Le texte au-dessus de hGui.TrainLenghtProbe
-% uicontrol('style', 'text', 'string', 'Train Duration',...
-%     'units', 'pixels', 'position', [188 425 54 30]);
-
 % -------------------------------------------------
 
 % Create a checkbox to stimulate the cortex 
@@ -217,9 +208,6 @@ hGui.DataTable = uitable(Fig,'ColumnWidth',{55 55 69.3 53},'ColumnName',...
     {'Single','Probe','ProbeEMG','Display'},'Position',[52 60 255 220]);
 hGui.DataTable.Data = {};
 hGui.DataTable.ColumnEditable = true;
-
-% hGui.DataTable.ColumnName = {'Single Stim','Probe Stim','Display'};
-% hGui.DataTable.ColumnEditable = true;
 
 % Create a checkbox to allow an average response of the EMG
 hGui.Average = uicontrol('style', 'checkbox', 'string', 'Average',...
@@ -713,26 +701,28 @@ if get(hObject, 'value')
         EMG_Window_Low = str2double(hGui.EMGWindowLow.String)/1000;
         EMG_Window_High = str2double(hGui.EMGWindowHigh.String)/1000;
         pulse_sent = false;
+        pause(0.2);
         if SelectionState == 1 && get(hGui.CheckCortexStim,'value') == 1 && get(hGui.CheckMuscleStim,'value') == 0
             hGui.NumPushTimeProbeEMGTrain = hGui.NumPushTimeProbeEMGTrain + 1;
             hGui.NumPushTimeTotal = hGui.NumPushTimeSingleTrain + hGui.NumPushTimeProbeTrain + hGui.NumPushTimeProbeEMGTrain;
-            set(hGui.StatusText, 'String', sprintf('Cortical stimulation dependant of the EMG. Probe %d in progress.',nb_pulsesDone));
             while pulse_sent == false
-                WindowEMG = BufferSelect(WindowEMGLast:WindowEMGFirst,2);
-                OvershootLimit = sum(WindowEMG>=EMG_Window_High)+sum(WindowEMG<=EMG_Window_Low);
+                %OvershootLimit = sum(WindowEMG>=EMG_Window_High)+sum(WindowEMG<=EMG_Window_Low);
                 TimeLimitEMG = toc - EMGProbe_StartTime;
-                if  OvershootLimit < 1
-                    pulse_sent = true;
+                set(hGui.StatusText, 'String', sprintf('Cortical stimulation dependant of the EMG. Probe %d in progress.',nb_pulsesDone));
+                WindowEMG = mean(abs(BufferSelect(WindowEMGLast:WindowEMGFirst,2)));
+                if WindowEMG<=EMG_Window_High && WindowEMG>=EMG_Window_Low %OvershootLimit < 1
                     outputSingleScan(sProbeEMG,[1,0]);
+                    drawnow
                     outputSingleScan(sProbeEMG,[0,0]);
+                    pulse_sent = true;
                     set(hGui.StatusText, 'String', sprintf('Cortical stimulation dependant of the EMG. Probe %d done.',nb_pulsesDone));
                     stop(sProbeEMG);
-                elseif TimeLimitEMG >= 30
-                    pulse_sent = true;
-                    outputSingleScan(sProbeEMG,[1,0]);
-                    outputSingleScan(sProbeEMG,[0,0]);
-                    set(hGui.StatusText, 'String', 'Burst sent after 30 seconds of waiting without appropriate EMG levels');
-                    stop(sProbeEMG);
+%                 elseif TimeLimitEMG >= 30
+%                     pulse_sent = true;
+%                     outputSingleScan(sProbeEMG,[1,0]);
+%                     outputSingleScan(sProbeEMG,[0,0]);
+%                     set(hGui.StatusText, 'String', 'Burst sent after 30 seconds of waiting without appropriate EMG levels');
+%                     stop(sProbeEMG);
                 else
                     pause(0.1);
                 end
