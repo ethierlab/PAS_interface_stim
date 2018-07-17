@@ -3,14 +3,15 @@ clear all
 global s
 s = daq.createSession('ni');
 
-ai0=addAnalogInputChannel(s,'Dev1','ai0','Voltage'); %Le Dev1 est le nom du daq
-ai1=addAnalogInputChannel(s,'Dev1','ai1','Voltage');
-ai2=addAnalogInputChannel(s,'Dev1','ai2','Voltage');
-ai3=addAnalogInputChannel(s,'Dev1','ai3','Voltage');
+%Le Dev1 est le nom du daq
+ai0=addAnalogInputChannel(s,'Dev1','ai0','Voltage'); % EMG
+%ai1=addAnalogInputChannel(s,'Dev1','ai1','Voltage');
+ai2=addAnalogInputChannel(s,'Dev1','ai2','Voltage'); % Trigger Cortex
+ai3=addAnalogInputChannel(s,'Dev1','ai3','Voltage'); % Trigger Muscle
 
 % Set acquisition configuration for each channel
 ai0.TerminalConfig = 'SingleEnded';
-ai1.TerminalConfig = 'SingleEnded';
+%ai1.TerminalConfig = 'SingleEnded';
 ai2.TerminalConfig = 'SingleEnded';
 ai3.TerminalConfig = 'SingleEnded';
 
