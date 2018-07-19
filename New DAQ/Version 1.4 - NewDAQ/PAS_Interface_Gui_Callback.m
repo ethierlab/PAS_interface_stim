@@ -49,6 +49,7 @@ title('Continious acquisition data (EMG)');
 legend({'EMG', 'Filtre EMG','Trig Cortex', 'Trig Muscle'},'Units', 'Pixels', 'Position', [1190 650 120 70]); %get(s.Channels(1:4), 'ID')
 set(hGui.Axes1, 'Units', 'Pixels', 'Position',  [490 450 820 190]);
 set(hGui.LivePlotEMG(2,1),'LineWidth',1.3); %'Color',[1 0 0]
+%set(hGui.Axes1, 'YAxisLocation', 'origin');
 
 % Deuxième plot : les trigger envoyés
 hGui.Axes2 = axes;
@@ -59,6 +60,7 @@ title('Continious acquisition data (trigger)');
 hGui.LivePlotTrig(1,1).Color = [0.9290 0.6940 0.1250]; % SelectionState dependent
 hGui.LivePlotTrig(2,1).Color = [0.4940 0.1840 0.5560];
 set(hGui.Axes2, 'Units', 'Pixels', 'Position',  [490 300 820 90]);
+linkaxes([hGui.Axes1,hGui.Axes2],'x');
 
 % Create the captured data plot axes (one line per acquisition channel)
 hGui.Axes3 = axes('Units', 'Pixels', 'Position', [490 50 820 190]);
@@ -152,9 +154,10 @@ uicontrol('style', 'text', 'string', 'Low limit (mV) ', 'HorizontalAlignment', '
     'units', 'pixels', 'position', [123 545 54 28]);
 
 % Create an editable text field for time to wait for a good EMG level
-hGui.FlagDisplay = uicontrol('style', 'edit', 'string','',...
+hGui.FlagDisplay = uicontrol('style', 'edit', 'string','...',...
     'units', 'pixels', 'position', [60 465 80 25]);
-% Le texte au-dessus de hGui.EMGTime
+
+% Le texte au-dessus de hGui.FlagDisplay
 uicontrol('style', 'text', 'string', 'Current EMG Condition', 'HorizontalAlignment', 'Center',...
     'units', 'pixels', 'position', [56 490 88 28]);
 
@@ -380,8 +383,8 @@ if get(hObject, 'value')
     % trigger selon les paramètres choisis.
     
     sManual = daq.createSession('ni');
-    addDigitalChannel(sManual,'Dev1', 'Port0/Line0', 'OutputOnly');
-    addDigitalChannel(sManual,'Dev1', 'Port0/Line1', 'OutputOnly');
+    addDigitalChannel(sManual,'Dev2', 'Port0/Line0', 'OutputOnly');
+    addDigitalChannel(sManual,'Dev2', 'Port0/Line1', 'OutputOnly');
     set(hGui.StatusText, 'String', 'Determination of the threshold for Max MEP');
     
     % Comptage du nombre de fois que le bouton est poussé
@@ -464,24 +467,6 @@ if get(hObject, 'value')
     LastEMG = round(MomentStimTrigRise + AStim*hGui.SourceRate);
     dataEMG = AllDataCollected(FirstEMG:LastEMG,:);
     
-    
-    %     Détermination de d'autres paramètres dans dataEMG
-    % EMG_Baseline = BufferSelect(WindowEMGLast:WindowEMGFirst,2);
-    
-    %     BufferLimitView = round(length(BufferSelect(:,1))-2*maxEMGbuffer);
-    %     MaxBaselineValue = max(EMG_Baseline)+0.5*Mean_EMG_Level;
-    %     MinBaselineValue = min(EMG_Baseline)-0.5*Mean_EMG_Level;
-    %     HighTrainTrig = sum(BufferSelect(BufferLimitView:length(BufferSelect(:,1)),4)>2);
-    %     MomentStimTrigRise = find(BufferSelect(:,4)>2,1,'last')-HighTrainTrig;
-    %     MomentStimTimeRise = BufferSelect(MomentStimTrigRise,1); % Déterminer la valeur en temps
-    %     MomentStimTrigFall = find(BufferSelect(:,4)>2,1,'last');
-    %     EMGLimitWindow = round(MomentStimTrigFall + 0.5*hGui.SourceRate);
-    %     MaxEMGValue = max(BufferSelect(MomentStimTrigFall:EMGLimitWindow,4));
-    %     MinEMGVAlue = min(BufferSelect(MomentStimTrigFall:EMGLimitWindow,4));
-    %     MomentPositiveResponse = find(BufferSelect(MomentStimTrigFall:length(BufferSelect(:,1)),4)>MaxBaselineValue,1,'first');
-    %     MomentNegativeResponse = find(BufferSelect(MomentStimTrigFall:length(BufferSelect(:,1)),4)<MinBaselineValue,1,'first');
-    
-    
     % Applique la rectification temporel de la capture
     if get(hGui.ZeroRectification,'value')
         dataEMG(:,1) = dataEMG(:,1) - MomentStimTimeRise;
@@ -515,10 +500,15 @@ end
 end
 
 function BaselineEMG(hObject,~,~)
+% Cette fonction calcule la moyenne de l'enveloppe de l'EMG et son ecart 
+% type de la dernière seconde du buffer afin de pouvoir déterminer les
+% limites EMG pour les probes
 if get(hObject, 'value')
     hGui = guidata(gcbo);
     global BufferSelect
     persistent dataBaseline
+    Duree_Baseline = 1;
+    NombreFoisSTD_HAut = 6;
     dataBaseline = BufferSelect(round(0.9*length(BufferSelect(:,1))):end,3);
     moyenne_baseline = mean(dataBaseline);
     ecart_type = std(dataBaseline);
@@ -562,8 +552,8 @@ if get(hObject, 'value')
     
     % Initialisation d'une sesion pour ajouter les sorties digitales
     sProbeEMG = daq.createSession('ni');
-    addDigitalChannel(sProbeEMG,'Dev1', 'Port0/Line0', 'OutputOnly');
-    addDigitalChannel(sProbeEMG,'Dev1', 'Port0/Line1', 'OutputOnly');
+    addDigitalChannel(sProbeEMG,'Dev2', 'Port0/Line0', 'OutputOnly');
+    addDigitalChannel(sProbeEMG,'Dev2', 'Port0/Line1', 'OutputOnly');
     
     % Boucle while afin de calculer en continue le code s'il atteint les
     % conditions ou pas
@@ -724,8 +714,8 @@ if get(hObject, 'value')
     hGui = guidata(gcbo);
     set(hGui.StatusText, 'String', 'PAS Experiment in progress.');
     sPAS = daq.createSession('ni');
-    addDigitalChannel(sPAS,'Dev1', 'Port0/Line0', 'OutputOnly');
-    addDigitalChannel(sPAS,'Dev1', 'Port0/Line1', 'OutputOnly');
+    addDigitalChannel(sPAS,'Dev2', 'Port0/Line0', 'OutputOnly');
+    addDigitalChannel(sPAS,'Dev2', 'Port0/Line1', 'OutputOnly');
     
     InterPulsePAS = str2double(hGui.InterPAS.String);
     LMinPAS = str2double(hGui.MinPAS.String);

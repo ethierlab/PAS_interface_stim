@@ -39,14 +39,12 @@ end
 
 [b,a] = butter(4,2*50/src.Rate,'high'); % High pass avec une freq de coupure à 50 Hz
 dataFiltered = filter(b,a,dataBuffer(:,2));
-[yupper,~] = envelope(dataFiltered,50,'peak');
+[yupper,~] = envelope(dataFiltered,20,'peak');
 dataEnveloppe = abs(yupper);
     
 if dataEnveloppe(end) < str2double(hGui.EMGWindowLow.String)/1000
-    FlagEMG = true;
     set(hGui.FlagDisplay, 'string', 'Rising');
 elseif dataEnveloppe(end) > str2double(hGui.EMGWindowHigh.String)/1000
-    FlagEMG = false;
     set(hGui.FlagDisplay, 'string', 'Falling');
 end
 
@@ -83,7 +81,7 @@ switch AIContSelect
     case 1 % EMG + Trig Cortex + filtre
         dataBufferSelect = [dataBuffer(:,1),dataFiltered,dataEnveloppe,dataBuffer(:,3),NaN(length(dataBuffer(:,1)),1)];
     case 2 % EMG + Trig Cortex
-        dataBufferSelect = [dataBuffer(:,1),dataBuffer(:,2),dataEnveloppe,dataBuffer(:,3),NaN(length(dataBuffer(:,1)),1)];
+        dataBufferSelect = [dataBuffer(:,1),dataBuffer(:,2),NaN(length(dataBuffer(:,1)),1),dataBuffer(:,3),NaN(length(dataBuffer(:,1)),1)];
     case 3 % EMG + Trig Muscle + filtre
         dataBufferSelect = [dataBuffer(:,1),dataFiltered,dataEnveloppe,NaN(length(dataBuffer(:,1)),1),dataBuffer(:,4)];
     case 4 % EMG + Trig Muscle
