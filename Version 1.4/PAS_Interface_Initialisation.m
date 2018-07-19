@@ -42,7 +42,6 @@ hGui = PAS_Interface_Gui_Callback(s);
 % The specified data capture parameters and the handles to the UI graphics
 % elements are passed as additional arguments to the callback function.
 dataListener = addlistener(s, 'DataAvailable', @(src,event) PAS_Interface_Acquisition(src, event, capture, hGui));
-
 % Add a listener for acquisition error events which might occur during background acquisition
 errorListener = addlistener(s, 'ErrorOccurred', @(src,event) disp(getReport(event.Error)));
 

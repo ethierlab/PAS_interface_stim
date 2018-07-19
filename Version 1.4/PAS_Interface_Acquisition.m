@@ -98,22 +98,25 @@ SelectionState = AIContSelect;
 BufferSelect = dataBufferSelect; % Global = persistent (type de variable)
 % BufferSelectProbe = dataBufferSelectProbe;
 
-% Update live data plot
-% Plot latest plotTimeSpan seconds of data in dataBuffer
-samplesToPlot = min([round(c.plotTimeSpan * src.Rate), size(dataBufferSelect,1)]);
-firstPoint = size(dataBufferSelect, 1) - samplesToPlot + 1;
-% Update x-axis limits
-xlim(hGui.Axes1, [dataBufferSelect(firstPoint,1), dataBufferSelect(end,1)]);
-xlim(hGui.Axes2, [dataBufferSelect(firstPoint,1), dataBufferSelect(end,1)]);
-% Update y-axis limits
-
 % Live plot has one line for each acquisition channel
-for ii = 1:2
-    set(hGui.LivePlotEMG(ii), 'XData', dataBufferSelect(firstPoint:end, 1), ...
-        'YData', dataBufferSelect(firstPoint:end, 1+ii));
-    set(hGui.LivePlotTrig(ii), 'XData', dataBufferSelect(firstPoint:end, 1), ...
-        'YData', dataBufferSelect(firstPoint:end, 3+ii));
-    drawnow limitrate
+
+if get(hGui.StopTimeAxis,'value')
+    set(hGui.StatusText, 'String', 'Live plot is stop!');
+else
+    % Update live data plot
+    % Plot latest plotTimeSpan seconds of data in dataBuffer
+    samplesToPlot = min([round(c.plotTimeSpan * src.Rate), size(dataBufferSelect,1)]);
+    firstPoint = size(dataBufferSelect, 1) - samplesToPlot + 1;
+    % Update x-axis limits
+    xlim(hGui.Axes1, [dataBufferSelect(firstPoint,1), dataBufferSelect(end,1)]);
+    xlim(hGui.Axes2, [dataBufferSelect(firstPoint,1), dataBufferSelect(end,1)]);
+    for ii = 1:2
+        set(hGui.LivePlotEMG(ii), 'XData', dataBufferSelect(firstPoint:end, 1), ...
+            'YData', dataBufferSelect(firstPoint:end, 1+ii));
+        set(hGui.LivePlotTrig(ii), 'XData', dataBufferSelect(firstPoint:end, 1), ...
+            'YData', dataBufferSelect(firstPoint:end, 3+ii));
+        drawnow limitrate
+    end
 end
 
 end
