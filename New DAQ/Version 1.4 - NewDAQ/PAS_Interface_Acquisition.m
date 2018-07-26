@@ -39,7 +39,7 @@ end
 
 [b,a] = butter(4,2*50/src.Rate,'high'); % High pass avec une freq de coupure à 50 Hz
 dataFiltered = filter(b,a,dataBuffer(:,2));
-[yupper,~] = envelope(dataFiltered,50,'peak');
+[yupper,~] = envelope(dataFiltered,70,'peak');
 dataEnveloppe = abs(yupper);
     
 if dataEnveloppe(end) < str2double(hGui.EMGWindowLow.String)/1000

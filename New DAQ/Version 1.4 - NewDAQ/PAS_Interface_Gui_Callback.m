@@ -7,9 +7,12 @@ function hGui = PAS_Interface_Gui_Callback(s)
 
 % position:[pixels from left, pixels from bottom, pixels across, pixels high]
 
+%Scaling factor
+ScaleGUI = 1.25;
+
 % Create a figure and configure a callback function (executes on window close)
 Fig = figure('Name','PAS Experiment Interface 1.3', ...
-    'NumberTitle', 'off', 'Resize', 'on', 'Position', [45 65 1350 730]);
+    'NumberTitle', 'off', 'Resize', 'off', 'Position', [45 65 1350 730]*ScaleGUI);
 set(Fig, 'DeleteFcn', {@endDAQ, s});
 uiBackgroundColor = get(Fig, 'Color');
 hGui = guihandles(Fig); 
@@ -46,8 +49,8 @@ hGui.LivePlotEMG = plot(0, zeros(1,4));  %numel(s.Channels(1:3)
 xlabel('Time (s)');
 ylabel('Voltage (V)');
 title('Continious acquisition data (EMG)');
-legend({'EMG', 'Filtre EMG','Trig Cortex', 'Trig Muscle'},'Units', 'Pixels', 'Position', [1190 650 120 70]); %get(s.Channels(1:4), 'ID')
-set(hGui.Axes1, 'Units', 'Pixels', 'Position',  [490 450 820 190]);
+legend({'EMG', 'Filtre EMG','Trig Cortex', 'Trig Muscle'},'Units', 'Pixels', 'Position', [1190 650 120 70]*ScaleGUI); %get(s.Channels(1:4), 'ID')
+set(hGui.Axes1, 'Units', 'Pixels', 'Position',  [490 450 820 190]*ScaleGUI);
 set(hGui.LivePlotEMG(2,1),'LineWidth',1.3); %'Color',[1 0 0]
 %set(hGui.Axes1, 'YAxisLocation', 'origin');
 
@@ -59,11 +62,11 @@ ylabel('Voltage (V)');
 title('Continious acquisition data (trigger)');
 hGui.LivePlotTrig(1,1).Color = [0.9290 0.6940 0.1250]; % SelectionState dependent
 hGui.LivePlotTrig(2,1).Color = [0.4940 0.1840 0.5560];
-set(hGui.Axes2, 'Units', 'Pixels', 'Position',  [490 300 820 90]);
+set(hGui.Axes2, 'Units', 'Pixels', 'Position',  [490 300 820 90]*ScaleGUI);
 linkaxes([hGui.Axes1,hGui.Axes2],'x');
 
 % Create the captured data plot axes (one line per acquisition channel)
-hGui.Axes3 = axes('Units', 'Pixels', 'Position', [490 50 820 190]);
+hGui.Axes3 = axes('Units', 'Pixels', 'Position', [490 50 820 190]*ScaleGUI);
 hGui.CapturePlot = plot(NaN, NaN(1,4));
 xlabel('Time (s)');
 ylabel('Voltage (V)');
@@ -71,39 +74,29 @@ title('EMG response');
 
 % --------------------------------------------------
 
-% Titre de l'interface
-uicontrol('style', 'text', 'string', 'PAS Experiment Interface 1.3','FontSize',...
-    20, 'FontName', 'Yu Gothic UI' , 'FontWeight', 'bold', 'ForegroundColor', [0 0.8 0.4],...
-    'HorizontalAlignment', 'Center', 'units', 'pixels', 'position', [425 670 500 40]);
-
-% Section pour Probe
-uicontrol('style', 'text', 'string', 'Probe Section', 'FontSize', 13,...
-    'FontName', 'Yu Gothic UI' , 'FontWeight', 'bold', 'ForegroundColor', [0 0.5 1],...
-    'HorizontalAlignment', 'Center', 'units', 'pixels', 'position', [60 673 320 30]);
-
 % Create an editable text field for the Before Stim recording
 hGui.BeforeStim = uicontrol('style', 'edit', 'string', hGui.BeforeStim_Var,...
-    'units', 'pixels', 'position', [190 575 50 25]); %[60 465 50 25]);
+    'units', 'pixels', 'position', [190 575 50 25]*ScaleGUI); %[60 465 50 25]);
 
 % Le texte au-dessus de hGui.BeforeStim
 uicontrol('style', 'text', 'string', 'Before Stim (ms) ',...
-    'units', 'pixels', 'position', [189 602 54 28]); %[57 492 60 25]);
+    'units', 'pixels', 'position', [189 602 54 28]*ScaleGUI); %[57 492 60 25]);
 
 % Create an editable text field for the After Stim recording
 hGui.AfterStim = uicontrol('style', 'edit', 'string', hGui.AfterStim_Var,...
-    'units', 'pixels', 'position', [255 575 50 25]); %[125 465 50 25]);
+    'units', 'pixels', 'position', [255 575 50 25]*ScaleGUI); %[125 465 50 25]);
  
 % Le texte au-dessus de hGui.AfterStim
 uicontrol('style', 'text', 'string', 'After Stim (ms) ',...
-    'units', 'pixels', 'position', [255 602 54 28]); %[126 492 50 25]);
+    'units', 'pixels', 'position', [255 602 54 28]*ScaleGUI); %[126 492 50 25]);
 
 % Create an editable text field for the number of pulses for Probe
 hGui.PulseProbe = uicontrol('style', 'edit', 'string', hGui.PulseProbe_Var,... 
-    'units', 'pixels', 'position', [60 575 50 25]);
+    'units', 'pixels', 'position', [60 575 50 25]*ScaleGUI);
 
 % Le texte au-dessus de hGui.PulseProbe
 uicontrol('style', 'text', 'string', 'Trains','HorizontalAlignment', 'Center', ...
-    'units', 'pixels', 'position', [60 600 50 20]);
+    'units', 'pixels', 'position', [60 600 50 20]*ScaleGUI);
 
 % % Create an editable text field for the minimun time between each probe
 % hGui.MinProbeTime = uicontrol('style', 'edit', 'string', hGui.MinProbeTime_Var,...
@@ -123,62 +116,62 @@ uicontrol('style', 'text', 'string', 'Trains','HorizontalAlignment', 'Center', .
 
 % Create an editable text field for time to wait between each pulse for PAS
 hGui.InterProbe = uicontrol('style', 'edit', 'string', hGui.InterProbe_Var,...
-    'units', 'pixels', 'position', [125 575 50 25]);
+    'units', 'pixels', 'position', [125 575 50 25]*ScaleGUI);
 
 % Le texte au-dessus de hGui.InterProbe
 uicontrol('style', 'text', 'string', 'Inter-Train time (s)', 'HorizontalAlignment', 'Center',...
-    'units', 'pixels', 'position', [123 600 54 28]);
+    'units', 'pixels', 'position', [123 600 54 28]*ScaleGUI);
 
 % Create an editable text field for time to wait for a good EMG level
 hGui.EMGTime = uicontrol('style', 'edit', 'string', hGui.EMGTime_Var,...
-    'units', 'pixels', 'position', [60 520 50 25]);
+    'units', 'pixels', 'position', [60 520 50 25]*ScaleGUI);
 
 % Le texte au-dessus de hGui.EMGTime
 uicontrol('style', 'text', 'string', 'EMG wait time (ms) ', 'HorizontalAlignment', 'Center',...
-    'units', 'pixels', 'position', [58 545 54 28]);
+    'units', 'pixels', 'position', [58 545 54 28]*ScaleGUI);
 
 % Create an editable text field for time to wait for a good EMG level
 hGui.EMGWindowHigh = uicontrol('style', 'edit', 'string', hGui.EMGWindowHigh_Var,...
-    'units', 'pixels', 'position', [190 520 50 25]);
+    'units', 'pixels', 'position', [190 520 50 25]*ScaleGUI);
 
 % Le texte au-dessus de hGui.EMGWindowHigh
 uicontrol('style', 'text', 'string', 'High limit (mV) ', 'HorizontalAlignment', 'Center',...
-    'units', 'pixels', 'position', [188 545 54 28]);
+    'units', 'pixels', 'position', [188 545 54 28]*ScaleGUI);
 
 % Create an editable text field for time to wait for a good EMG level
 hGui.EMGWindowLow = uicontrol('style', 'edit', 'string', hGui.EMGWindowLow_Var,...
-    'units', 'pixels', 'position', [125 520 50 25]);
+    'units', 'pixels', 'position', [125 520 50 25]*ScaleGUI);
 
 % Le texte au-dessus de hGui.EMGWindowLow
 uicontrol('style', 'text', 'string', 'Low limit (mV) ', 'HorizontalAlignment', 'Center',...
-    'units', 'pixels', 'position', [123 545 54 28]);
+    'units', 'pixels', 'position', [123 545 54 28]*ScaleGUI);
 
 % Create an editable text field for time to wait for a good EMG level
 hGui.FlagDisplay = uicontrol('style', 'edit', 'string','...',...
-    'units', 'pixels', 'position', [60 465 80 25]);
+    'units', 'pixels', 'position', [60 465 80 25]*ScaleGUI);
 
 % Le texte au-dessus de hGui.FlagDisplay
 uicontrol('style', 'text', 'string', 'Current EMG Condition', 'HorizontalAlignment', 'Center',...
-    'units', 'pixels', 'position', [56 490 88 28]);
+    'units', 'pixels', 'position', [56 490 88 28]*ScaleGUI);
 
 % -------------------------------------------------
 
 % Create a checkbox to stimulate the cortex 
 hGui.CheckCortexStim = uicontrol('style', 'checkbox', 'string', 'Cortex Stim.',...
-    'units', 'pixels', 'position', [230 640 80 15]);
+    'units', 'pixels', 'position', [230 640 80 15]*ScaleGUI);
 set(hGui.CheckCortexStim, 'Value', 1)
 
 % Create a checkbox to stimulate the muscle 
 hGui.CheckMuscleStim = uicontrol('style', 'checkbox', 'string', 'Muscle Stim.',...
-    'units', 'pixels', 'position', [310 640 80 15]);
+    'units', 'pixels', 'position', [310 640 80 15]*ScaleGUI);
 
 % Create a checkbox to keep the data in the live plot the same
 hGui.StopTimeAxis = uicontrol('style', 'checkbox', 'string', 'Stop Time Axis',...
-    'units', 'pixels', 'position', [210 470 100 15]);
+    'units', 'pixels', 'position', [210 470 100 15]*ScaleGUI);
 
 % Create a checkbox to stop the probe EMG or the PAS without closing the UI
 hGui.StopWhileLoop = uicontrol('style', 'checkbox', 'string', 'Stop Process',...
-    'units', 'pixels', 'position', [210 490 100 15]);
+    'units', 'pixels', 'position', [210 490 100 15]*ScaleGUI);
 
 % % Create a checkbox to allow an random spacing for the Probe EMG Stim
 % hGui.RandomProbe = uicontrol('style', 'checkbox', 'string', 'Random Spacing',...
@@ -186,11 +179,11 @@ hGui.StopWhileLoop = uicontrol('style', 'checkbox', 'string', 'Stop Process',...
 
 % Create a checkbox to use the rising emg signal
 hGui.RisingOption = uicontrol('style', 'checkbox', 'string', 'Rising',...
-    'units', 'pixels', 'position', [255 542 50 15]);
+    'units', 'pixels', 'position', [255 542 50 15]*ScaleGUI);
 
 % Create a checkbox to use the rising emg signal
 hGui.FallingOption = uicontrol('style', 'checkbox', 'string', 'Falling',...
-    'units', 'pixels', 'position', [255 522 50 15]);
+    'units', 'pixels', 'position', [255 522 50 15]*ScaleGUI);
 
 % % Create a checkbox to use the rising emg signal
 % hGui.STDOption = uicontrol('style', 'checkbox', 'string', 'STD Limits',...
@@ -201,63 +194,63 @@ hGui.FallingOption = uicontrol('style', 'checkbox', 'string', 'Falling',...
 % Section pour les PAS
 uicontrol('style', 'text', 'string', 'PAS Experiment Section', 'FontSize',13,...
     'FontName', 'Yu Gothic UI' , 'FontWeight', 'bold', 'ForegroundColor', [1 0.6 0.2],...
-    'HorizontalAlignment', 'Center', 'units', 'pixels', 'position', [60 410 320 30]);
+    'HorizontalAlignment', 'Center', 'units', 'pixels', 'position', [60 410 320 30]*ScaleGUI);
 
 % Create an editable text field for the number of pulses for PAS
 hGui.PulsePAS = uicontrol('style', 'edit', 'string', hGui.PulsePAS_Var,...
-    'units', 'pixels', 'position', [60 350 50 25]);
+    'units', 'pixels', 'position', [60 350 50 25]*ScaleGUI);
 
 % Le texte au-dessus de hGui.PulsePAS
 uicontrol('style', 'text', 'string', 'Trains','HorizontalAlignment', 'Center', ...
-    'units', 'pixels', 'position', [60 375 50 20]);
+    'units', 'pixels', 'position', [60 375 50 20]*ScaleGUI);
 
 % Create an editable text field for time to wait between each pulse for PAS
 hGui.InterPAS = uicontrol('style', 'edit', 'string', hGui.InterPAS_Var,...
-    'units', 'pixels', 'position', [125 350 50 25]);
+    'units', 'pixels', 'position', [125 350 50 25]*ScaleGUI);
 
 % Le texte au-dessus de hGui.InterPAS
 uicontrol('style', 'text', 'string', 'Inter-Train time (s)', 'HorizontalAlignment', 'Center',...
-    'units', 'pixels', 'position', [123 375 54 30]);
+    'units', 'pixels', 'position', [123 375 54 30]*ScaleGUI);
 
 % Create an editable text field for the minimun time to wait for PAS
 hGui.MinPAS = uicontrol('style', 'edit', 'string', hGui.MinPAS_Var,...
-    'units', 'pixels', 'position', [190 350 50 25]);
+    'units', 'pixels', 'position', [190 350 50 25]*ScaleGUI);
 
 % Le texte au-dessus de hGui.MinPAS
 uicontrol('style', 'text', 'string', 'Min time (s) (random) ', 'HorizontalAlignment', 'Center',...
-    'units', 'pixels', 'position', [187 375 58 30]);
+    'units', 'pixels', 'position', [186 375 60 30]*ScaleGUI);
 
 % Create an editable text field for the maximun time to wait for PAS
 hGui.MaxPAS = uicontrol('style', 'edit', 'string', hGui.MaxPAS_Var,...
-    'units', 'pixels', 'position', [255 350 50 25]);
+    'units', 'pixels', 'position', [255 350 50 25]*ScaleGUI);
 
 % Le texte au-dessus de hGui.MaxPAS
 uicontrol('style', 'text', 'string', 'Max time (s) (random) ', 'HorizontalAlignment', 'Center',...
-    'units', 'pixels', 'position', [251 375 60 30]);
+    'units', 'pixels', 'position', [249 375 62 30]*ScaleGUI);
 
 % Create a checkbox to allow an random spacing for the PAS Stim
 hGui.RandomPAS = uicontrol('style', 'checkbox', 'string', 'Random Spacing',...
-    'units', 'pixels', 'position', [60 320 125 25]);
+    'units', 'pixels', 'position', [60 320 125 25]*ScaleGUI);
 
 % --------------------------------------------------
 
 % Section pour les données (display et save)
 uicontrol('style', 'text', 'string', 'Data Section', 'FontSize',13,...
     'FontName', 'Yu Gothic UI' , 'FontWeight', 'bold', 'ForegroundColor', [1 0.1 0.1],...
-    'HorizontalAlignment', 'Center', 'units', 'pixels', 'position', [60 295 320 30]);
+    'HorizontalAlignment', 'Center', 'units', 'pixels', 'position', [60 295 320 30]*ScaleGUI);
 
-hGui.DataTable = uitable(Fig,'ColumnWidth',{55 55 69.3 53},'ColumnName',...
-    {'Single','Probe','ProbeEMG','Display'},'Position',[52 60 255 220]);
+hGui.DataTable = uitable(Fig,'ColumnWidth',{54*ScaleGUI 54*ScaleGUI 69.3*ScaleGUI 55*ScaleGUI},'ColumnName',...
+    {'Single','Probe','ProbeEMG','Display'},'Position',[52 60 255 220]*ScaleGUI);
 hGui.DataTable.Data = {};
 hGui.DataTable.ColumnEditable = true;
 
 % Create a checkbox to allow an average response of the EMG
 hGui.Average = uicontrol('style', 'checkbox', 'string', 'Average',...
-    'units', 'pixels', 'position', [320 190 75 15]);
+    'units', 'pixels', 'position', [320 190 75 15]*ScaleGUI);
 
 % Create a checkbox to allow a reticfication in capture
 hGui.ZeroRectification = uicontrol('style', 'checkbox', 'string', 'Zero Rectification',...
-    'units', 'pixels', 'position', [320 170 100 15]);
+    'units', 'pixels', 'position', [320 170 100 15]*ScaleGUI);
 
 % --------------------------------------------------
 
@@ -265,7 +258,7 @@ hGui.ZeroRectification = uicontrol('style', 'checkbox', 'string', 'Zero Rectific
 
 % Create a status text field
 hGui.StatusText = uicontrol('style', 'text', 'string', '',...
-    'units', 'pixels', 'position', [60 25 225 25],...
+    'units', 'pixels', 'position', [60 25 225 25]*ScaleGUI,...
     'HorizontalAlignment', 'left', 'BackgroundColor', uiBackgroundColor);
 
 % Create a popup menu to select the channel to display in continuous axes
@@ -274,35 +267,35 @@ hGui.StatusText = uicontrol('style', 'text', 'string', '',...
 
 % Create a popup menu to select the channel to display in continuous axes
 hGui.ContSelect = uicontrol('Style', 'popup','String',...
-    {'EMG + Trig Cortex + Filtre','EMG + Trig Cortex','EMG + Trig Muscle + Filtre','EMG + Trig Muscle'},'Position',[60 606 150 50]);
+    {'EMG + Trig Cortex + Filtre','EMG + Trig Cortex','EMG + Trig Muscle + Filtre','EMG + Trig Muscle'},'Position',[60 606 150 50]*ScaleGUI);
 
 % Le texte au-dessus de hGui.ContSelect
 uicontrol('style', 'text', 'string', 'Measurement Selection','HorizontalAlignment', 'Center', ...
-    'units', 'pixels', 'position', [60 660 150 15]);
+    'units', 'pixels', 'position', [60 660 150 15]*ScaleGUI);
 
 % Create a manual stim button (muscle) and configure a callback function
 hGui.GuideUtile = uicontrol('style', 'pushbutton', 'string', 'Guide Interface',...
-    'units', 'pixels', 'position', [890 667 80 40]);
+    'units', 'pixels', 'position', [890 667 80 40]*ScaleGUI);
 set(hGui.GuideUtile, 'callback', {@endDAQ, s}); %{@messageGuide, hGui});
 
 % Create a load parameters button
 hGui.LoadEditParams = uicontrol('style', 'pushbutton', 'string', 'Load Params',...
-    'units', 'pixels', 'position', [990 667 80 40]);
+    'units', 'pixels', 'position', [990 667 80 40]*ScaleGUI);
 set(hGui.LoadEditParams, 'callback', {@loadParams, hGui});
 
 % Create a save parameters button
 hGui.SaveEditParams = uicontrol('style', 'pushbutton', 'string', 'Save Params',...
-    'units', 'pixels', 'position', [1090 667 80 40]);
+    'units', 'pixels', 'position', [1090 667 80 40]*ScaleGUI);
 set(hGui.SaveEditParams, 'callback', {@saveParams, hGui});
 
 % Create a probe stim button and configure a callback function
 hGui.BaselineButton = uicontrol('style', 'pushbutton', 'string', 'Set Baseline',...
-    'units', 'pixels', 'position', [320 575 80 40]);
+    'units', 'pixels', 'position', [320 575 80 40]*ScaleGUI);
 set(hGui.BaselineButton, 'callback', {@BaselineEMG, hGui}); %{@startProbe, hGui});
 
 % Create a manual single stim button and configure a callback function
 hGui.ManualButton = uicontrol('style', 'pushbutton', 'string', 'Single Train',...
-    'units', 'pixels', 'position', [320 520 80 40]);
+    'units', 'pixels', 'position', [320 520 80 40]*ScaleGUI);
 set(hGui.ManualButton, 'callback', {@startManual, hGui});
 
 % % Create a probe stim button and configure a callback function
@@ -312,26 +305,52 @@ set(hGui.ManualButton, 'callback', {@startManual, hGui});
 
 % Create a probe stim button and dependant for the EMG and configure a callback function
 hGui.ProbeEMGButton = uicontrol('style', 'pushbutton', 'string', 'Probe EMG Start',...
-    'units', 'pixels', 'position', [320 465 80 40]);
+    'units', 'pixels', 'position', [320 465 80 40]*ScaleGUI);
 set(hGui.ProbeEMGButton, 'callback', {@startProbeEMG, hGui});
 
 % Create a PAS button and configure a callback function
 hGui.PASButton = uicontrol('style', 'pushbutton', 'string', 'Start PAS',...
-    'units', 'pixels', 'position', [320 350 80 40]);
+    'units', 'pixels', 'position', [320 350 80 40]*ScaleGUI);
 set(hGui.PASButton, 'callback', {@startPAS, hGui});
 
 % Create a Display button and configure a callback function
 hGui.DisplayButton = uicontrol('style', 'pushbutton', 'string', 'Display EMG',...
-    'units', 'pixels', 'position', [320 60 80 40]);
+    'units', 'pixels', 'position', [320 60 80 40]*ScaleGUI);
 set(hGui.DisplayButton, 'callback', {@displayCapture, hGui});
 
 % Create a Save button and configure a callback function
 hGui.SaveButton = uicontrol('style', 'pushbutton', 'string', 'Save Data',...
-    'units', 'pixels', 'position', [320 115 80 40]);
+    'units', 'pixels', 'position', [320 115 80 40]*ScaleGUI);
 set(hGui.SaveButton, 'callback', {@SaveData, hGui});
 
- 
+% Ajustements des scaling des plots, des edits box et des pushbutton
+DefaultFontSizeEMGPlot = hGui.Axes1.FontSize;
+DefaultFontSizeEMGTrig = hGui.Axes2.FontSize;
+DefaultFontSizeEMGCapture = hGui.Axes3.FontSize;
+set(findall(gcf,'-property','FontSize'),'FontSize', hGui.BeforeStim.FontSize*ScaleGUI);
+set(hGui.Axes1,'FontSize',DefaultFontSizeEMGPlot*ScaleGUI);
+set(hGui.Axes2,'FontSize',DefaultFontSizeEMGTrig*ScaleGUI);
+set(hGui.Axes3,'FontSize',DefaultFontSizeEMGCapture*ScaleGUI);
 
+% Titre de l'interface
+uicontrol('style', 'text', 'string', 'PAS Experiment Interface 1.3','FontSize',...
+    20*ScaleGUI, 'FontName', 'Yu Gothic UI' , 'FontWeight', 'bold', 'ForegroundColor', [0 0.8 0.4],...
+    'HorizontalAlignment', 'Center', 'units', 'pixels', 'position', [475 670 400 40]*ScaleGUI);
+
+% Section pour Probe
+uicontrol('style', 'text', 'string', 'Probe Section', 'FontSize', 13*ScaleGUI,...
+    'FontName', 'Yu Gothic UI' , 'FontWeight', 'bold', 'ForegroundColor', [0 0.5 1],...
+    'HorizontalAlignment', 'Center', 'units', 'pixels', 'position', [60 673 320 30]*ScaleGUI);
+
+% Section pour les PAS
+uicontrol('style', 'text', 'string', 'PAS Experiment Section', 'FontSize',13*ScaleGUI,...
+    'FontName', 'Yu Gothic UI' , 'FontWeight', 'bold', 'ForegroundColor', [1 0.6 0.2],...
+    'HorizontalAlignment', 'Center', 'units', 'pixels', 'position', [60 410 320 30]*ScaleGUI);
+
+% Section pour les données (display et save)
+uicontrol('style', 'text', 'string', 'Data Section', 'FontSize',13*ScaleGUI,...
+    'FontName', 'Yu Gothic UI' , 'FontWeight', 'bold', 'ForegroundColor', [1 0.1 0.1],...
+    'HorizontalAlignment', 'Center', 'units', 'pixels', 'position', [60 295 320 30]*ScaleGUI);
 
 guidata(Fig,hGui);
 end
@@ -512,8 +531,8 @@ if get(hObject, 'value')
     dataBaseline = BufferSelect(round(0.9*length(BufferSelect(:,1))):end,3);
     moyenne_baseline = mean(dataBaseline);
     ecart_type = std(dataBaseline);
-    EMG_Window_Low_STD = round((moyenne_baseline+3*ecart_type)*1000,4);
-    EMG_Window_High_STD = round((moyenne_baseline+6*ecart_type)*1000,4);
+    EMG_Window_Low_STD = round((moyenne_baseline+2*ecart_type)*1000,4);
+    EMG_Window_High_STD = round((moyenne_baseline+7*ecart_type)*1000,4);
     set(hGui.EMGWindowLow, 'string', EMG_Window_Low_STD);
     set(hGui.EMGWindowHigh, 'string',EMG_Window_High_STD);
     guidata(gcbo,hGui);
@@ -531,8 +550,8 @@ if get(hObject, 'value')
     % Enregistrement dans des variables le contenu des cases de la
     % section Probe
     InterPulseProbe = str2double(hGui.InterProbe.String);
-    LMinProbe = str2double(hGui.MinProbeTime.String);
-    LMaxProbe = str2double(hGui.MaxProbeTime.String);
+    %LMinProbe = str2double(hGui.MinProbeTime.String);
+    %LMaxProbe = str2double(hGui.MaxProbeTime.String);
     nb_pulsesProbe = round(str2double(hGui.PulseProbe.String));
     BeforeCapture = str2double(hGui.BeforeStim.String)/1000;
     AfterCapture = str2double(hGui.AfterStim.String)/1000;
@@ -540,15 +559,15 @@ if get(hObject, 'value')
     WindowEMGLast = round(length(BufferSelect(:,1)) - str2double(hGui.EMGTime.String)*hGui.SourceRate/1000);
     
     % Vérification des temps s'ils sont réalistes ou pas
-    if get(hGui.RandomProbe,'value')
-        if LMinProbe < (BeforeCapture + AfterCapture)
-            err('La valeur minimale des trains aléatoire est plus petite que la fênetre capturée (avant et après capture)')
-        end
-    else
-        if InterPulseProbe < (BeforeCapture + AfterCapture)
-            err('La durée de inter-train est plus petite que la fênetre capturée (avant et après capture)')
-        end
+%     if get(hGui.RandomProbe,'value')
+%         if LMinProbe < (BeforeCapture + AfterCapture)
+%             err('La valeur minimale des trains aléatoire est plus petite que la fênetre capturée (avant et après capture)')
+%         end
+
+    if InterPulseProbe < (BeforeCapture + AfterCapture)
+        err('La durée de inter-train est plus petite que la fênetre capturée (avant et après capture)')
     end
+
     
     % Initialisation d'une sesion pour ajouter les sorties digitales
     sProbeEMG = daq.createSession('ni');
@@ -632,19 +651,18 @@ if get(hObject, 'value')
         % Pause afin d'acquérir toutes les données nécessaires à la capture
         TimeSpentStimulating = toc - EMGProbe_StartTime;
         
-        if get(hGui.RandomProbe,'value')
-            if TimeSpentStimulating > LMinProbe
-                pause(AfterCapture);
-            else
-                ecart_stim = round((LMinProbe+(LMaxProbe-LMinProbe).*rand(1))) - TimeSpentStimulating;
-                pause(ecart_stim);
-            end
+        %         if get(hGui.RandomProbe,'value')
+        %             if TimeSpentStimulating > LMinProbe
+        %                 pause(AfterCapture);
+        %             else
+        %                 ecart_stim = round((LMinProbe+(LMaxProbe-LMinProbe).*rand(1))) - TimeSpentStimulating;
+        %                 pause(ecart_stim);
+        %             end
+        
+        if TimeSpentStimulating > InterPulseProbe
+            pause(AfterCapture);
         else
-            if TimeSpentStimulating > InterPulseProbe
-                pause(AfterCapture);
-            else
-                pause(InterPulseProbe-TimeSpentStimulating);
-            end
+            pause(InterPulseProbe-TimeSpentStimulating);
         end
         
         AllDataCollected = BufferSelect(:,:);
