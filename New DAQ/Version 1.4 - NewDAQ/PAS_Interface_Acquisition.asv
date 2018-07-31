@@ -120,8 +120,7 @@ else
     for ii = 1:2
         set(hGui.LivePlotEMG(ii), 'XData', dataBufferSelect(firstPoint:end, 1), ...
             'YData', dataBufferSelect(firstPoint:end, 1+ii));
-        set(hGui.LowLine,'XData', EMG_Width_Line_X, 'YData', EMG_Low_Limit);
-        set(hGui.HighLine,'XData', EMG_Width_Line_X, 'YData', EMG_High_Limit);
+        set(hGui.LowLine,'XData', EMG_Width_Line_X, 'YData', 
         %set(hGui.Rectangle, 'Position', [dataBufferSelect(firstPoint,1),Low_Limit,EMG_Width,EMG_Height]);
         set(hGui.LivePlotTrig(ii), 'XData', dataBufferSelect(firstPoint:end, 1), ...
             'YData', dataBufferSelect(firstPoint:end, 3+ii));
