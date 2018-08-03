@@ -46,8 +46,8 @@ hGui.MaxPAS_Var = '3';
 % Premier plot : les EMGs
 hGui.Axes1 = axes;
 hGui.LivePlotEMG = plot(0, zeros(1,4));  %numel(s.Channels(1:3)
-hGui.LowLine = line(0,0);
-hGui.HighLine = line(0,0);
+hGui.LowLine = line(0,0,'Color',[0 0.8 0.1],'LineWidth',1.2);
+hGui.HighLine = line(0,0,'Color',[0.4 0 0.8],'LineWidth',1.2);
 %hGui.Rectangle = rectangle('Position',[0,0,0,0],'FaceColor',[0 0.6 0.08]); %'FaceAlpha',0.25,'LineStyle','none');
 xlabel('Time (s)');
 ylabel('Voltage (V)');
@@ -55,8 +55,8 @@ title('Continious acquisition data (EMG)');
 legend({'EMG', 'Filtre EMG','Trig Cortex', 'Trig Muscle'},'Units', 'Pixels', 'Position', [1190 650 120 70]*ScaleGUI); %get(s.Channels(1:4), 'ID')
 set(hGui.Axes1, 'Units', 'Pixels', 'Position',  [490 450 820 190]*ScaleGUI);
 set(hGui.LivePlotEMG(2,1),'LineWidth',1.3); %'Color',[1 0 0]
-set(hGui.LowLine,'Color',[0.2 0.2 1]);
-set(hGui.HighLine,'Color',[1 0.2 0.2]);
+%set(hGui.LowLine,'Color',[0.2 0.2 1]);
+%set(hGui.HighLine,'Color',[1 0.2 0.2]);
 
 % Deuxième plot : les trigger envoyés
 hGui.Axes2 = axes;
@@ -678,7 +678,11 @@ if get(hObject, 'value')
         
         MomentStimTrigFall = find(AllDataCollected(:,4)>2,1,'last');
         WindowTrigCheck = MomentStimTrigFall - round(hGui.SourceRate);
-        HighTrainTrigVerify = sum(AllDataCollected(WindowTrigCheck:MomentStimTrigFall,4)>2);
+        if sum(AllDataCollected(WindowTrigCheck:MomentStimTrigFall,4)>2)<=0
+            HighTrainTrigVerify = 0;
+        else
+            HighTrainTrigVerify = sum(AllDataCollected(WindowTrigCheck:MomentStimTrigFall,4)>2);
+        end
         MomentStimTrigRise = find(AllDataCollected(:,4)>2,1,'last')-HighTrainTrigVerify;
         
         % Déterminer la valeur en temps où le trigger s'est produit
