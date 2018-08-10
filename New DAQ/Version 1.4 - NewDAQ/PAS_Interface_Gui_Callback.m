@@ -76,6 +76,18 @@ hGui.LivePlotTrig(2,1).Color = [0.4940 0.1840 0.5560];
 set(hGui.Axes2, 'Units', 'Pixels', 'Position',  [490 300 820 90]*ScaleGUI);
 linkaxes([hGui.Axes1,hGui.Axes2],'x');
 
+% Create a legend for the other axes that is static (for performance)
+hGui.Legend = axes('Units', 'Pixels', 'Position', [490 50 820 190]*ScaleGUI);
+hGui.Legend.Visible = 'off';
+line(0,0,'Color',hGui.LivePlotEMG(1,1).Color);
+line(0,0,'Color',hGui.LivePlotEMG(2,1).Color,'LineWidth',1.2);
+line(0,0,'Color',hGui.LowLine.Color,'LineWidth',1.2);
+line(0,0,'Color',hGui.HighLine.Color,'LineWidth',1.2);
+line(0,0,'Color',hGui.LivePlotTrig(1,1).Color);
+line(0,0,'Color',hGui.LivePlotTrig(2,1).Color);
+legend({'EMG','Enveloppe EMG','Low EMG Limit','High EMG Limit','Trig Cortex','Trig Muscle'},'Units', 'Pixels', 'Position', [1190 650 120 70]*ScaleGUI);
+hGui.Legend.Legend.FontSize = 6.6;
+
 % Create the captured data plot axes (one line per acquisition channel)
 hGui.Axes3 = axes('Units', 'Pixels', 'Position', [490 50 820 190]*ScaleGUI);
 hGui.CapturePlot = plot(NaN, NaN(1,4));
@@ -178,7 +190,7 @@ hGui.CheckMuscleStim = uicontrol('style', 'checkbox', 'string', 'Muscle Stim.',.
 
 % Create a checkbox to keep the data in the live plot the same
 hGui.StopTimeAxis = uicontrol('style', 'checkbox', 'string', 'Stop Time Axis',...
-    'units', 'pixels', 'position', [210 470 100 15]*ScaleGUI);
+    'units', 'pixels', 'position', [200 490 100 15]*ScaleGUI);
 
 % % Create a checkbox to allow an random spacing for the Probe EMG Stim
 % hGui.RandomProbe = uicontrol('style', 'checkbox', 'string', 'Random Spacing',...
@@ -282,27 +294,27 @@ uicontrol('style', 'text', 'string', 'Measurement Selection','HorizontalAlignmen
 
 % Create a manual stim button (muscle) and configure a callback function
 hGui.GuideUtile = uicontrol('style', 'pushbutton', 'string', 'Guide Interface',...
-    'units', 'pixels', 'position', [890 667 80 40]*ScaleGUI);
+    'units', 'pixels', 'position', [890 667 80 40]*ScaleGUI,'BackgroundColor',[0.89,0.96,0.89]);
 set(hGui.GuideUtile, 'callback', {@endDAQ, [s,s_out]}); %{@messageGuide, hGui});
 
 % Create a load parameters button
 hGui.LoadEditParams = uicontrol('style', 'pushbutton', 'string', 'Load Params',...
-    'units', 'pixels', 'position', [990 667 80 40]*ScaleGUI);
+    'units', 'pixels', 'position', [990 667 80 40]*ScaleGUI,'BackgroundColor',[0.89,0.96,0.89]);
 set(hGui.LoadEditParams, 'callback', {@loadParams, hGui});
 
 % Create a save parameters button
 hGui.SaveEditParams = uicontrol('style', 'pushbutton', 'string', 'Save Params',...
-    'units', 'pixels', 'position', [1090 667 80 40]*ScaleGUI);
+    'units', 'pixels', 'position', [1090 667 80 40]*ScaleGUI,'BackgroundColor',[0.89,0.96,0.89]);
 set(hGui.SaveEditParams, 'callback', {@saveParams, hGui});
 
 % Create a probe stim button and configure a callback function
 hGui.BaselineButton = uicontrol('style', 'pushbutton', 'string', 'Set Baseline',...
-    'units', 'pixels', 'position', [320 575 80 40]*ScaleGUI);
+    'units', 'pixels', 'position', [320 575 80 40]*ScaleGUI,'BackgroundColor',[0.87,0.91,1]);
 set(hGui.BaselineButton, 'callback', {@BaselineEMG, hGui}); %{@startProbe, hGui});
 
 % Create a manual single stim button and configure a callback function
 hGui.ManualButton = uicontrol('style', 'pushbutton', 'string', 'Single Train',...
-    'units', 'pixels', 'position', [320 520 80 40]*ScaleGUI);
+    'units', 'pixels', 'position', [320 520 80 40]*ScaleGUI,'BackgroundColor',[0.87,0.91,1]);
 set(hGui.ManualButton, 'callback', {@startManual, s_out});
 
 % % Create a probe stim button and configure a callback function
@@ -311,37 +323,39 @@ set(hGui.ManualButton, 'callback', {@startManual, s_out});
 % set(hGui.ProbeButton, 'callback', {@startProbe, hGui});
 
 % Create a probe stim button and dependant for the EMG and configure a callback function
-hGui.ProbeEMGButton = uicontrol('style', 'pushbutton', 'string', 'Probe EMG Start',...
-    'units', 'pixels', 'position', [320 465 80 40]*ScaleGUI);
+hGui.ProbeEMGButton = uicontrol('style', 'pushbutton', 'string', 'Probe EMG',...
+    'units', 'pixels', 'position', [320 465 80 40]*ScaleGUI,'BackgroundColor',[0.87,0.91,1]);
 set(hGui.ProbeEMGButton, 'callback', {@startProbeEMG, s_out});
 
 % Create a PAS button and configure a callback function
 hGui.PASButton = uicontrol('style', 'pushbutton', 'string', 'Start PAS',...
-    'units', 'pixels', 'position', [320 350 80 40]*ScaleGUI);
+    'units', 'pixels', 'position', [320 350 80 40]*ScaleGUI,'BackgroundColor',[1,0.92,0.8]);
 set(hGui.PASButton, 'callback', {@startPAS, s_out});
 
 % Create a Display button and configure a callback function
 hGui.DisplayButton = uicontrol('style', 'pushbutton', 'string', 'Display EMG',...
-    'units', 'pixels', 'position', [320 60 80 40]*ScaleGUI);
+    'units', 'pixels', 'position', [320 60 80 40]*ScaleGUI,'BackgroundColor',[0.96,0.9,0.9]);
 set(hGui.DisplayButton, 'callback', {@displayCapture, hGui});
 
 % Create a Save button and configure a callback function
 hGui.SaveButton = uicontrol('style', 'pushbutton', 'string', 'Save Data',...
-    'units', 'pixels', 'position', [320 115 80 40]*ScaleGUI);
+    'units', 'pixels', 'position', [320 115 80 40]*ScaleGUI,'BackgroundColor',[0.96,0.9,0.9]);
 set(hGui.SaveButton, 'callback', {@SaveData, hGui});
 
 % Create a checkbox to stop the probe EMG or the PAS without closing the UI
 hGui.StopWhileLoop = uicontrol('style', 'togglebutton', 'string', 'Stop Process',...
-    'BackgroundColor',[1,0.3,0.3],'units', 'pixels', 'position', [210 490 100 20]*ScaleGUI);
+    'BackgroundColor',[1,0.3,0.3],'units', 'pixels', 'position', [200 465 100 20]*ScaleGUI);
 
 % Ajustements des scaling des plots, des edits box et des pushbutton
 DefaultFontSizeEMGPlot = hGui.Axes1.FontSize;
 DefaultFontSizeEMGTrig = hGui.Axes2.FontSize;
 DefaultFontSizeEMGCapture = hGui.Axes3.FontSize;
+DefaultFontSizeLegend = hGui.Legend.Legend.FontSize;
 set(findall(gcf,'-property','FontSize'),'FontSize', hGui.BeforeStim.FontSize*ScaleGUI);
 set(hGui.Axes1,'FontSize',DefaultFontSizeEMGPlot*ScaleGUI);
 set(hGui.Axes2,'FontSize',DefaultFontSizeEMGTrig*ScaleGUI);
 set(hGui.Axes3,'FontSize',DefaultFontSizeEMGCapture*ScaleGUI);
+set(hGui.Legend.Legend,'FontSize',DefaultFontSizeLegend*ScaleGUI);
 
 % Titre de l'interface
 uicontrol('style', 'text', 'string', 'PAS Experiment Interface 1.4','FontSize',...
