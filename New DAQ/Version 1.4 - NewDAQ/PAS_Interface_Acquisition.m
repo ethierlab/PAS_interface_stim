@@ -1,17 +1,13 @@
-function PAS_Interface_Acquisition(src, event, c, hGui)
+function PAS_Interface_Acquisition(src, event, c)
 
-% Declaration de variable global et persistent
+% Declaration de variable persistentes
 persistent dataBuffer dataBufferSelect %dataBufferProbe dataBufferSelectProbe
-global BufferSelect SelectionState FlagEMG%BufferSelectProbe 
 
 % If dataCapture is running for the first time, initialize persistent vars
-if event.TimeStamps(1)==0
-    data = {};
+hGui = guidata(gca);
+if event.TimeStamps(1) == 0
     dataBuffer = [];          % data buffer
     dataBufferSelect = [];    % data buffer with selected colums to display
-    prevData = [];            % last data point from previous callback execution
-else
-    prevData = dataBuffer(end, :);
 end
         
 % if get(hGui.RandomProbe,'value')
@@ -29,69 +25,44 @@ if (numSamplesToDiscard > 0)
     dataBuffer(1:numSamplesToDiscard, :) = [];
 end
 
-% % Store continuous acquisition data in persistent FIFO buffer dataBuffer
-% % for the probe option
-% dataBufferProbe = [dataBufferProbe; latestData];
-% numSamplesToDiscardProbe = round(size(dataBufferProbe,1) - BufferSizeProbe);
-% if (numSamplesToDiscardProbe > 0)
-%     dataBufferProbe(1:numSamplesToDiscardProbe, :) = [];
-% end
-
+% Enveloppe du signal EMG  et des données filtrées.
 [b,a] = butter(4,2*50/src.Rate,'high'); % High pass avec une freq de coupure à 50 Hz
 dataFiltered = filter(b,a,dataBuffer(:,2));
 [yupper,~] = envelope(dataFiltered,70,'peak');
 dataEnveloppe = abs(yupper);
     
 if dataEnveloppe(end) < str2double(hGui.EMGWindowLow.String)/1000
-    FlagEMG = true;
+    hGui.FlagEMG = true;
     set(hGui.FlagDisplay, 'string', 'Rising');
 elseif dataEnveloppe(end) > str2double(hGui.EMGWindowHigh.String)/1000
-    FlagEMG = false;
+    hGui.FlagEMG = false;
     set(hGui.FlagDisplay, 'string', 'Falling');
 end
 
-% [yupper,~] = envelope(dataBuffer(:,2),150,'rms');
-% dataFiltered = abs(yupper);
-
 % Display selection code for the live plot
 AIContSelect = get(hGui.ContSelect,'value');
-% switch AIContSelect
-%     case 1 % AI0 + AI2
-%         dataBufferSelect = [dataBuffer(:,1),dataBuffer(:,2),dataFiltered,dataBuffer(:,4),NaN(length(dataBuffer(:,1)),1)]; %NaN(length(dataBuffer(:,1)),1)
-%         dataBufferSelectProbe = [dataBufferProbe(:,1),dataBufferProbe(:,2),NaN(length(dataBufferProbe(:,1)),1),dataBufferProbe(:,4),NaN(length(dataBufferProbe(:,1)),1)];
-%     case 2 % AI1 + AI3
-%         dataBufferSelect = [dataBuffer(:,1),NaN(length(dataBuffer(:,1)),1),dataBuffer(:,3),NaN(length(dataBuffer(:,1)),1),dataBuffer(:,5)];
-% %         dataBufferSelectProbe = [dataBufferProbe(:,1),NaN(length(dataBufferProbe(:,1)),1),dataBufferProbe(:,3),NaN(length(dataBufferProbe(:,1)),1),dataBufferProbe(:,5)];
-%     case 3 % AI0
-%         dataBufferSelect = [dataBuffer(:,1),dataBuffer(:,2),NaN(length(dataBuffer(:,1)),3)];
-% %         dataBufferSelectProbe = [dataBufferProbe(:,1),dataBufferProbe(:,2),NaN(length(dataBufferProbe(:,1)),3)];
-%     case 4 % AI1
-%         dataBufferSelect = [dataBuffer(:,1),NaN(length(dataBuffer(:,1)),1),dataBuffer(:,3),NaN(length(dataBuffer(:,1)),2)];
-% %         dataBufferSelectProbe = [dataBufferProbe(:,1),NaN(length(dataBufferProbe(:,1)),1),dataBufferProbe(:,3),NaN(length(dataBufferProbe(:,1)),2)];
-%     case 5 % AI2
-%         dataBufferSelect = [dataBuffer(:,1),NaN(length(dataBuffer(:,1)),2),dataBuffer(:,4),NaN(length(dataBuffer(:,1)),1)];
-% %         dataBufferSelectProbe = [dataBufferProbe(:,1),NaN(length(dataBufferProbe(:,1)),2),dataBufferProbe(:,4),NaN(length(dataBufferProbe(:,1)),1)];
-%     case 6 % AI3
-%         dataBufferSelect = [dataBuffer(:,1),NaN(length(dataBuffer(:,1)),3),dataBuffer(:,5)];
-% %         dataBufferSelectProbe = [dataBufferProbe(:,1),NaN(length(dataBufferProbe(:,1)),3),dataBufferProbe(:,5)];
-%     case 7 % ALL
-%         dataBufferSelect = dataBuffer;
-% %         dataBufferSelectProbe = dataBufferProbe;
-% end
-
 switch AIContSelect
     case 1 % EMG + Trig Cortex + filtre
         dataBufferSelect = [dataBuffer(:,1),dataFiltered,dataEnveloppe,dataBuffer(:,3),NaN(length(dataBuffer(:,1)),1)];
+        max_ylimit_value = max([max(abs(dataBufferSelect(round(0.1*src.Rate):end,2))),max(hGui.HighLine.YData)]);
+        min_ylimit_value = -max_ylimit_value;
     case 2 % EMG + Trig Cortex
         dataBufferSelect = [dataBuffer(:,1),dataBuffer(:,2),dataEnveloppe,dataBuffer(:,3),NaN(length(dataBuffer(:,1)),1)];
+        max_ylimit_value = max(dataBufferSelect(round(0.1*src.Rate):end,2));
+        min_ylimit_value = min(dataBufferSelect(round(0.1*src.Rate):end,2));
     case 3 % EMG + Trig Muscle + filtre
         dataBufferSelect = [dataBuffer(:,1),dataFiltered,dataEnveloppe,NaN(length(dataBuffer(:,1)),1),dataBuffer(:,4)];
+        max_ylimit_value = max([max(abs(dataBufferSelect(round(0.1*src.Rate):end,2))),max(hGui.HighLine.YData)]);
+        min_ylimit_value = -max_ylimit_value;
     case 4 % EMG + Trig Muscle
         dataBufferSelect = [dataBuffer(:,1),dataBuffer(:,2),NaN(length(dataBuffer(:,1)),2),dataBuffer(:,4)];
+        max_ylimit_value = max(abs(dataBufferSelect(round(0.1*src.Rate):end,2)));
+        min_ylimit_value = min(dataBufferSelect(round(0.1*src.Rate):end,2));
 end
 
-SelectionState = AIContSelect;
-BufferSelect = dataBufferSelect; % Global = persistent (type de variable)
+hGui.SelectionState = AIContSelect;
+hGui.BufferSelect = dataBufferSelect;
+% BufferSelect = dataBufferSelect; % Global = persistent (type de variable)
 % BufferSelectProbe = dataBufferSelectProbe;
 
 % Live plot has one line for each acquisition channel
@@ -107,7 +78,7 @@ else
     xlim(hGui.Axes1, [dataBufferSelect(firstPoint,1), dataBufferSelect(end,1)]);
     xlim(hGui.Axes2, [dataBufferSelect(firstPoint,1), dataBufferSelect(end,1)]);
     % Keep y-axis center to origin
-    ylim(hGui.Axes1, [-max(dataBufferSelect(:,2)),max(dataBufferSelect(:,2))]);
+    ylim(hGui.Axes1, [min_ylimit_value,max_ylimit_value]);
     % Calculate the rectangle properties
     Low_Limit = str2double(hGui.EMGWindowLow.String)/1000;
     High_Limit = str2double(hGui.EMGWindowHigh.String)/1000;
@@ -128,5 +99,5 @@ else
         drawnow limitrate
     end
 end
-
+guidata(gca,hGui);
 end
