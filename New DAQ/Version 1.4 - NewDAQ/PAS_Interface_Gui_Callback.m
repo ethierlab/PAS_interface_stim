@@ -28,7 +28,6 @@ hGui.SourceRate = s.Rate;
 hGui.databufferCapture = {};
 hGui.BufferSelect = [];
 hGui.SelectionState = 1;
-hGui.FlagEMG = [];
 
 % Defaults parameters of the edit text box
 hGui.BeforeStim_Var = '500';
@@ -181,12 +180,12 @@ uicontrol('style', 'text', 'string', 'Current EMG Condition', 'HorizontalAlignme
 
 % Create a checkbox to stimulate the cortex 
 hGui.CheckCortexStim = uicontrol('style', 'checkbox', 'string', 'Cortex Stim.',...
-    'units', 'pixels', 'position', [230 640 80 15]*ScaleGUI);
+    'units', 'pixels', 'position', [235 640 80 15]*ScaleGUI);
 set(hGui.CheckCortexStim, 'Value', 1)
 
 % Create a checkbox to stimulate the muscle 
 hGui.CheckMuscleStim = uicontrol('style', 'checkbox', 'string', 'Muscle Stim.',...
-    'units', 'pixels', 'position', [310 640 80 15]*ScaleGUI);
+    'units', 'pixels', 'position', [318 640 80 15]*ScaleGUI);
 
 % Create a checkbox to keep the data in the live plot the same
 hGui.StopTimeAxis = uicontrol('style', 'checkbox', 'string', 'Stop Time Axis',...
@@ -286,11 +285,11 @@ hGui.StatusText = uicontrol('style', 'text', 'string', '',...
 
 % Create a popup menu to select the channel to display in continuous axes
 hGui.ContSelect = uicontrol('Style', 'popup','String',...
-    {'EMG + Trig Cortex + Filtre','EMG + Trig Cortex','EMG + Trig Muscle + Filtre','EMG + Trig Muscle'},'Position',[60 606 150 50]*ScaleGUI);
+    {'EMG 50Hz High Pass + Trig Cortex','EMG DC Remove + Trig Cortex','EMG 50Hz High Pass + Trig Muscle','EMG DC Remove + Trig Muscle'},'Position',[60 606 160 50]*ScaleGUI);
 
 % Le texte au-dessus de hGui.ContSelect
 uicontrol('style', 'text', 'string', 'Measurement Selection','HorizontalAlignment', 'Center', ...
-    'units', 'pixels', 'position', [60 660 150 15]*ScaleGUI);
+    'units', 'pixels', 'position', [60 660 160 15]*ScaleGUI);
 
 % Create a manual stim button (muscle) and configure a callback function
 hGui.GuideUtile = uicontrol('style', 'pushbutton', 'string', 'Guide Interface',...
@@ -418,9 +417,10 @@ function startManual(hObject,~,s_out)
 
 if get(hObject, 'value')
     hGui = guidata(gcbo);
-    drawnow
     set(hGui.StatusText, 'String', 'Manual cortex stimulation in progress.');
     persistent AllDataCollected WindowEMG
+    global LiveBuffer
+    drawnow
     
     % Initialisation de la session selon la sélection choisie, les checkbox
     % choisie pour faire la stimulation. On prépare aussi le signal de
@@ -456,9 +456,9 @@ if get(hObject, 'value')
                 set(hGui.StatusText, 'String', 'Manual Stimulation While Loop Stop!');
                 break;
             end
-            WindowEMG = hGui.BufferSelect(WindowEMGLast:WindowEMGFirst,3);
+            WindowEMG = LiveBuffer(WindowEMGLast:WindowEMGFirst,3);
             OvershootLimit = sum(WindowEMG>=EMG_Window_High)+sum(WindowEMG<=EMG_Window_Low);
-            if OvershootLimit < 1 && hGui.FlagEMG == true
+            if OvershootLimit < 1
                 pulse_sent = true;
                 %outputSingleScan(sManual,[1,0]);
                 outputSingleScan(s_out,[1,0]);
@@ -497,7 +497,7 @@ if get(hObject, 'value')
     
     % On enregistre les données dans une matrice persistente, afin de faire
     % des analsyes et d'obtenir une matrice de l'EMG avec les paramètres voulues
-    AllDataCollected = hGui.BufferSelect(:,:);
+    AllDataCollected = LiveBuffer(:,:);
     
     % Détermination de certains temps précis
     if hGui.SelectionState == 1 && get(hGui.CheckCortexStim,'value') == 1 && get(hGui.CheckMuscleStim,'value') == 0
@@ -508,11 +508,22 @@ if get(hObject, 'value')
         MomentStimTrigRise = find(AllDataCollected(:,4)>2,1,'last')-HighTrainTrig;
         
     elseif hGui.SelectionState == 2 && get(hGui.CheckCortexStim,'value') == 0 && get(hGui.CheckMuscleStim,'value') == 1 
-        HighTrainTrig = sum(hGui.BufferSelect(1:length(hGui.BufferSelect(:,1)),5)>4);
-        MomentStimTrigRise = find(hGui.BufferSelect(:,5)>4,1,'last')-HighTrainTrig;
+        HighTrainTrig = sum(BufferSelect(1:length(BufferSelect(:,1)),5)>4);
+        MomentStimTrigRise = find(BufferSelect(:,5)>4,1,'last')-HighTrainTrig;
+        
+                MomentStimTrigFall = find(AllDataCollected(:,4)>2,1,'last');
+        WindowTrigCheck = MomentStimTrigFall - round(hGui.SourceRate);
+        HighTrainTrig = sum(AllDataCollected(WindowTrigCheck:MomentStimTrigFall,4)>2);
+        MomentStimTrigRise = find(AllDataCollected(:,4)>2,1,'last')-HighTrainTrig;
+        
     elseif hGui.SelectionState == 7 && get(hGui.CheckCortexStim,'value') == 1 && get(hGui.CheckMuscleStim,'value') == 1
-        HighTrainTrig = sum(hGui.BufferSelect(1:length(hGui.BufferSelect(:,1)),4)>4);
-        MomentStimTrigRise = find(hGui.BufferSelect(:,4)>4,1,'last')-HighTrainTrig;
+        HighTrainTrig = sum(BufferSelect(1:length(BufferSelect(:,1)),4)>4);
+        MomentStimTrigRise = find(BufferSelect(:,4)>4,1,'last')-HighTrainTrig;
+        
+                MomentStimTrigFall = find(AllDataCollected(:,4)>2,1,'last');
+        WindowTrigCheck = MomentStimTrigFall - round(hGui.SourceRate);
+        HighTrainTrig = sum(AllDataCollected(WindowTrigCheck:MomentStimTrigFall,4)>2);
+        MomentStimTrigRise = find(AllDataCollected(:,4)>2,1,'last')-HighTrainTrig;
     end
     
     % Déterminer la valeur en temps où le trigger s'est produit
@@ -579,9 +590,10 @@ function startProbeEMG(hObject,~,s_out)
 
 if get(hObject, 'value')
     hGui = guidata(gcbo);
-    drawnow
     set(hGui.StatusText, 'String', 'Probe stimulation in progress.');
     persistent WindowEMG AllDataCollected
+    global LiveBuffer
+    drawnow
     
     % Enregistrement dans des variables le contenu des cases de la
     % section Probe
@@ -631,7 +643,8 @@ if get(hObject, 'value')
                         break;
                     end
                     set(hGui.StatusText, 'String', sprintf('Cortical stimulation dependant of the EMG. Probe %d in progress.',nb_pulsesDone));
-                    WindowEMG = hGui.BufferSelect(WindowEMGLast:WindowEMGFirst,3);
+                    % WindowEMG = hGui.BufferSelect(WindowEMGLast:WindowEMGFirst,3);
+                    WindowEMG = LiveBuffer(WindowEMGLast:WindowEMGFirst,3);
                     OvershootLimit = sum(WindowEMG>=EMG_Window_High)+sum(WindowEMG<=EMG_Window_Low);
                     if OvershootLimit < 1
                         outputSingleScan(s_out,[1,0]);
@@ -651,9 +664,10 @@ if get(hObject, 'value')
                         break;
                     end
                     set(hGui.StatusText, 'String', sprintf('Cortical stimulation dependant of the EMG rising. Probe %d in progress.',nb_pulsesDone));
-                    WindowEMG = hGui.BufferSelect(WindowEMGLast:WindowEMGFirst,3);
+                    % WindowEMG = hGui.BufferSelect(WindowEMGLast:WindowEMGFirst,3);
+                    WindowEMG = LiveBuffer(WindowEMGLast:WindowEMGFirst,3);
                     OvershootLimit = sum(WindowEMG>=EMG_Window_High)+sum(WindowEMG<=EMG_Window_Low);
-                    if OvershootLimit < 1 && hGui.FlagEMG == 1
+                    if OvershootLimit < 1 && isequal(hGui.FlagDisplay.String,'Rising')
                         outputSingleScan(s_out,[1,0]);
                         drawnow
                         pause(0.05);
@@ -671,9 +685,10 @@ if get(hObject, 'value')
                         break;
                     end
                     set(hGui.StatusText, 'String', sprintf('Cortical stimulation dependant of the EMG falling. Probe %d in progress.',nb_pulsesDone));
-                    WindowEMG = hGui.BufferSelect(WindowEMGLast:WindowEMGFirst,3);
+                    % WindowEMG = hGui.BufferSelect(WindowEMGLast:WindowEMGFirst,3);
+                    WindowEMG = LiveBuffer(WindowEMGLast:WindowEMGFirst,3);
                     OvershootLimit = sum(WindowEMG>=EMG_Window_High)+sum(WindowEMG<=EMG_Window_Low);
-                    if OvershootLimit < 1 && hGui.FlagEMG == 0
+                    if OvershootLimit < 1 && isequal(hGui.FlagDisplay.String,'Falling')
                         outputSingleScan(s_out,[1,0]);
                         drawnow
                         pause(0.05);
@@ -712,7 +727,7 @@ if get(hObject, 'value')
             pause(InterPulseProbe-TimeSpentStimulating);
         end
         
-        AllDataCollected = hGui.BufferSelect(:,:);
+        AllDataCollected = LiveBuffer(:,:);
         
         %             HighTrainTrig_LastTime = round((toc - EMGProbe_StartTime)*hGui.SourceRate);
         %             % Déterminer le moment où la première valeur de trigger a lieu
@@ -723,7 +738,7 @@ if get(hObject, 'value')
         WindowTrigCheck = MomentStimTrigFall - round(hGui.SourceRate);
         if sum(AllDataCollected(WindowTrigCheck:MomentStimTrigFall,4)>2)<=0
             HighTrainTrigVerify = 0;
-            fprintf('Problème de calcul au train %d. Le train n''est pas apparu dans le graphique des trigger, donc il est règlé à une durée nulle.  \n',nb_pulsesDone,EMGOverCount)
+            fprintf('Problème de calcul au train %d. Le train n''est pas apparu dans le graphique des trigger, donc il est règlé à une durée nulle.  \n',nb_pulsesDone)
         else
             HighTrainTrigVerify = sum(AllDataCollected(WindowTrigCheck:MomentStimTrigFall,4)>2);
         end
@@ -773,7 +788,11 @@ if get(hObject, 'value')
     
     % Reset du bouton et mise à jour des données gui
     set(hObject, 'value', 0);
-    set(hGui.StatusText, 'String', 'Last Capture taken from Manual Stimulation!');
+    if hGui.StopWhileLoop.Value % If true, the loop will break
+        set(hGui.StatusText, 'String', 'Manual Stimulation While Loop Stop!');
+    else
+        set(hGui.StatusText, 'String', 'Last Capture taken from Manual Stimulation!');
+    end
     guidata(gcbo,hGui);
 end
 end
@@ -970,200 +989,200 @@ end
 % analog output pour construire le signal de trigger. Utilisation non
 % recommandé.
 
-function startProbe(hObject,~,~)
-
-if get(hObject, 'value')
-    hGui = guidata(gcbo);
-    set(hGui.StatusText, 'String', 'Probe stimulation in progress.');
-    persistent MomentStimTime MomentStimTrig dataEMGProbe
-    global BufferSelectProbe SelectionState
-    
-    % Enregistrement dans des vraibales le contenu des cases de la
-    % section Probe
-    InterPulseProbe = str2double(hGui.InterProbe.String);
-    LMinProbe = str2double(hGui.MinProbeTime.String);
-    LMaxProbe = str2double(hGui.MaxProbeTime.String);
-    BeforeCapture = str2double(hGui.BeforeStim.String)/1000;
-    AfterCapture = str2double(hGui.AfterStim.String)/1000;
-    nb_pulsesProbe = round(str2double(hGui.PulseProbe.String));
-    
-    % Compatage du nombre de fois que le bouton est poussé
-    hGui.NumPushTimeProbeTrain = hGui.NumPushTimeProbeTrain + 1;
-    hGui.NumPushTimeTotal = hGui.NumPushTimeSingleTrain + hGui.NumPushTimeProbeTrain + hGui.NumPushTimeProbeEMGTrain;
-    
-    % Creation d'une nouvelle session de analog output servant pour la
-    % section Probe
-    sProbe = daq.createSession('ni');
-    sProbe.Rate = 1000;
-    
-    % Code d'erreur pour vérifier si les paramètres de stimulation sont
-    % cohérentes avec les paramètres de capture choisis. On définit aussi
-    % la durée d'un "pulse" (time_single_pulse) qui va être répétée selon
-    % le nombre de pulse désiré dans Probe.
-    esp_time = 1/sProbe.Rate;
-    if get(hGui.RandomProbe,'value')
-        if LMinProbe < (BeforeCapture + AfterCapture)
-            err('La valeur minimale des trains aléatoire est plus petite que la fênetre capturée (avant et après capture)')
-        else
-            time_single_pulse = [0:esp_time:LMaxProbe]';
-        end
-    else
-        if InterPulseProbe < (BeforeCapture + AfterCapture) % Ajouter Le esp_time? Qui correspond à la 0 si on fait -BeforeCapture à +AfterCapture (2001 de longueur si 500 ms et 1500 ms après)
-            err('La durée de inter-train est plus petite que la fênetre capturée (avant et après capture)')
-        else
-            time_single_pulse = [0:esp_time:InterPulseProbe]';
-        end
-    end
-    
-%----- Préparation de Analog Out en fonction de paramètres choisis -----
-    
-    if hGui.SelectionState == 1 && get(hGui.CheckCortexStim,'value') == 1 && get(hGui.CheckMuscleStim,'value') == 0
-        % Update du status 
-        disp('Stimulation du cortex en processus et AI0 et AI2 est enregistré (Probe)')
-        set(hGui.StatusText, 'String', 'Stimulation du cortex en processus et AI0 et AI2 est enregistré (Probe)');
-        
-        % Génération du signal de trigger
-        addAnalogOutputChannel(sProbe,'Dev1','ao0','Voltage');
-        n = 0;
-        pulse_cortex_tot_Probe = {};
-        while n <= nb_pulsesProbe
-            n=n+1;
-            if get(hGui.RandomProbe,'value')
-                ecart_stim = round((LMinProbe+(LMaxProbe-LMinProbe).*rand(1))/esp_time);
-            else
-                ecart_stim = round(InterPulseProbe/(esp_time*1.5));
-            end
-            pulse_cortex_Probe = cat(1,(0*time_single_pulse(1:ecart_stim)),(5+0*time_single_pulse(ecart_stim+1:length(time_single_pulse))));
-            pulse_cortex_tot_Probe{n,1} = pulse_cortex_Probe;
-        end
-        
-        % Remise à zéro des output
-        pulse_cortex_tot_Probe{n+1,1} = 0*[0:esp_time:1]';
-        
-        % Préparation du signal à envoyer
-        Output_Cortex = cell2mat(pulse_cortex_tot_Probe);
-        queueOutputData(sProbe,Output_Cortex)
-        
-    elseif SelectionState == 2 && get(hGui.CheckCortexStim,'value') == 0 && get(hGui.CheckMuscleStim,'value') == 1
-        % Update du status 
-        disp('Stimulation du muscle en processus et AI1 est enregistré (Probe)')
-        set(hGui.StatusText, 'String', 'Muscle stimulation selected. (Probe)');
-        
-        % Génération du signal de trigger
-        addAnalogOutputChannel(sProbe,'Dev1','ao1','Voltage');
-        n = 0;
-        pulse_muscle_tot_Probe = {};
-        while n <= nb_pulsesProbe 
-            n=n+1;
-            if get(hGui.RandomProbe,'value')
-                ecart_stim = round((LMinProbe+(LMaxProbe-LMinProbe).*rand(1))/esp_time);
-            else
-                ecart_stim = round(InterPulseProbe/(esp_time*1.5));
-            end
-            pulse_muscle_Probe = cat(1,(0*time_single_pulse(1:ecart_stim)),(5+0*time_single_pulse(ecart_stim+1:length(time_single_pulse))));
-            pulse_muscle_tot_Probe{n,1} = pulse_muscle_Probe;
-        end
-        
-        % Remise à zéro des output
-        pulse_muscle_tot_Probe{n+1,1} = 0*[0:esp_time:1]';
-        
-        % Préparation du signal de trigger pour le muscle à envoyé
-        Output_Muscle = cell2mat(pulse_muscle_tot_Probe);
-        queueOutputData(sProbe,Output_Muscle)
-   
-    elseif hGui.SelectionState == 7 && get(hGui.CheckCortexStim,'value') == 1 && get(hGui.CheckMuscleStim,'value') == 1
-        % Update du status
-        disp('Stimulation du cortex et des muscles en processus et AI0 à AI3 est enregistré (Probe)')
-        set(hGui.StatusText, 'String', 'Probe cortex and muscle stimulations selected.');
-        
-        % Génération du signal
-        addAnalogOutputChannel(sProbe,'Dev1','ao0','Voltage');
-        addAnalogOutputChannel(sProbe,'Dev1','ao1','Voltage');
-        n = 0;
-        pulse_cortex_tot_Probe = {};
-        pulse_muscle_tot_Probe = {};
-        while n <= nb_pulsesProbe
-            n=n+1;
-            if get(hGui.RandomProbe,'value')
-                ecart_stim = round((LMinProbe+(LMaxProbe-LMinProbe).*rand(1))/esp_time);
-            else
-                ecart_stim = round(InterPulseProbe/(esp_time*1.5));
-            end
-            pulse_cortex_Probe = cat(1,(0*time_single_pulse(1:ecart_stim)),(5+0*time_single_pulse(ecart_stim+1:length(time_single_pulse))));
-            pulse_muscle_Probe = cat(1,(0*time_single_pulse(1:ecart_stim)),(5+0*time_single_pulse(ecart_stim+1:length(time_single_pulse))));
-            pulse_cortex_tot_Probe{n,1} = pulse_cortex_Probe;
-            pulse_muscle_tot_Probe{n,1} = pulse_muscle_Probe;
-        end
-        
-        % Remise à zéro des output
-        pulse_cortex_tot_Probe{n+1,1} = 0*[0:esp_time:1]';
-        pulse_muscle_tot_Probe{n+1,1} = 0*[0:esp_time:1]';
-        
-        % Préparation des signals à envoyés
-        Output_Cortex = cell2mat(pulse_cortex_tot_Probe);
-        Output_Muscle = cell2mat(pulse_muscle_tot_Probe);
-        queueOutputData(sProbe,[Output_Cortex Output_Muscle]);
-    else
-        error('Choose the appropriate selection that corresponds with the stimulation patern')
-    end
-    
- % ----- Envoi du Output et préparation à l'enregitrement -----
- 
-    tic
-    % Envoi du trigger vers le AM systems
-    startBackground(sProbe);
-    TimeProbeProcessStart = toc;
-    disp(TimeProbeProcessStart);
-    set(hGui.StatusText, 'String', 'Le rat devrait bouger ahhahahah');
-    wait(sProbe);
-    set(hGui.StatusText, 'String', 'Manual cortex stimulation is done!');
-    stop(sProbe);
-    
-    % Pause afin d'acquérir toutes les données nécessaires à la capture
-    pause(TimeProbeProcessStart + InterPulseProbe);
-    
-    % Déterminer le moment où la première valeur de trigger a lieu
-    if hGui.SelectionState == 1 && get(hGui.CheckCortexStim,'value') == 1 && get(hGui.CheckMuscleStim,'value') == 0
-        MomentStimTrig = find(BufferSelectProbe(:,4)>4,1,'first');
-    elseif hGui.SelectionState == 2 && get(hGui.CheckCortexStim,'value') == 0 && get(hGui.CheckMuscleStim,'value') == 1 
-        MomentStimTrig = find(BufferSelectProbe(:,5)>4,1,'first');
-    elseif hGui.SelectionState == 7 && get(hGui.CheckCortexStim,'value') == 1 && get(hGui.CheckMuscleStim,'value') == 1
-        MomentStimTrig = find(BufferSelectProbe(:,4)>4,1,'first');
-    end
-    
-    % Déterminer la valeur en temps où le trigger s'est produit
-    MomentStimTime = BufferSelectProbe(MomentStimTrig,1);
-    
-    % Paramètres de dataEMG pour enregistrer les données selon les specs
-    % voulues
-    FirstEMG = round(MomentStimTrig - BeforeCapture*hGui.SourceRate);
-    LastEMG = round(MomentStimTrig - BeforeCapture*hGui.SourceRate + (AfterCapture+BeforeCapture)*nb_pulsesProbe*hGui.SourceRate);
-    dataEMGProbe = BufferSelectProbe(FirstEMG:LastEMG,:);
-    
-    % Applique la rectification temporel de la capture
-    if get(hGui.ZeroRectification,'value')
-       dataEMGProbe(:,1) = dataEMGProbe(:,1) - MomentStimTime;
-    end
-   
-    % Sauvegarder les données dans un cell array qui incrémente selon le
-    % nombre de fois que le bouton est pressé
-    hGui.DataResponseProbe{hGui.NumPushTimeProbeTrain,1} = dataEMGProbe;
-    ProbePushTimeString = num2str(hGui.NumPushTimeProbeTrain);
-    hGui.DataTable.Data(hGui.NumPushTimeTotal,2) = cellstr(strcat('Probe ',ProbePushTimeString));
-    hGui.DataTable.Data(:,4) = {false};
-    hGui.DataTable.Data(hGui.NumPushTimeTotal,4) = {true};
- 
-    % On plot les dernières données du cell array
-    CaptureData = hGui.DataResponseSingle{hGui.NumPushTimeProbeTrain,1};
-    for jj = 1:numel(hGui.CapturePlot)
-    set(hGui.CapturePlot(jj), 'XData', CaptureData(:,1), ...
-                              'YData', CaptureData(:,1+jj))
-    drawnow limitrate
-    end
-    
-    % Reset du bouton et mise à jour des données gui
-    set(hObject, 'value', 0);
-    set(hGui.StatusText, 'String', 'Last Capture taken from Manual Stimulation!');
-    guidata(gcbo,hGui);
-end
-end
+% function startProbe(hObject,~,~)
+% 
+% if get(hObject, 'value')
+%     hGui = guidata(gcbo);
+%     set(hGui.StatusText, 'String', 'Probe stimulation in progress.');
+%     persistent MomentStimTime MomentStimTrig dataEMGProbe
+%     global BufferSelectProbe SelectionState
+%     
+%     % Enregistrement dans des vraibales le contenu des cases de la
+%     % section Probe
+%     InterPulseProbe = str2double(hGui.InterProbe.String);
+%     LMinProbe = str2double(hGui.MinProbeTime.String);
+%     LMaxProbe = str2double(hGui.MaxProbeTime.String);
+%     BeforeCapture = str2double(hGui.BeforeStim.String)/1000;
+%     AfterCapture = str2double(hGui.AfterStim.String)/1000;
+%     nb_pulsesProbe = round(str2double(hGui.PulseProbe.String));
+%     
+%     % Compatage du nombre de fois que le bouton est poussé
+%     hGui.NumPushTimeProbeTrain = hGui.NumPushTimeProbeTrain + 1;
+%     hGui.NumPushTimeTotal = hGui.NumPushTimeSingleTrain + hGui.NumPushTimeProbeTrain + hGui.NumPushTimeProbeEMGTrain;
+%     
+%     % Creation d'une nouvelle session de analog output servant pour la
+%     % section Probe
+%     sProbe = daq.createSession('ni');
+%     sProbe.Rate = 1000;
+%     
+%     % Code d'erreur pour vérifier si les paramètres de stimulation sont
+%     % cohérentes avec les paramètres de capture choisis. On définit aussi
+%     % la durée d'un "pulse" (time_single_pulse) qui va être répétée selon
+%     % le nombre de pulse désiré dans Probe.
+%     esp_time = 1/sProbe.Rate;
+%     if get(hGui.RandomProbe,'value')
+%         if LMinProbe < (BeforeCapture + AfterCapture)
+%             err('La valeur minimale des trains aléatoire est plus petite que la fênetre capturée (avant et après capture)')
+%         else
+%             time_single_pulse = [0:esp_time:LMaxProbe]';
+%         end
+%     else
+%         if InterPulseProbe < (BeforeCapture + AfterCapture) % Ajouter Le esp_time? Qui correspond à la 0 si on fait -BeforeCapture à +AfterCapture (2001 de longueur si 500 ms et 1500 ms après)
+%             err('La durée de inter-train est plus petite que la fênetre capturée (avant et après capture)')
+%         else
+%             time_single_pulse = [0:esp_time:InterPulseProbe]';
+%         end
+%     end
+%     
+% %----- Préparation de Analog Out en fonction de paramètres choisis -----
+%     
+%     if hGui.SelectionState == 1 && get(hGui.CheckCortexStim,'value') == 1 && get(hGui.CheckMuscleStim,'value') == 0
+%         % Update du status 
+%         disp('Stimulation du cortex en processus et AI0 et AI2 est enregistré (Probe)')
+%         set(hGui.StatusText, 'String', 'Stimulation du cortex en processus et AI0 et AI2 est enregistré (Probe)');
+%         
+%         % Génération du signal de trigger
+%         addAnalogOutputChannel(sProbe,'Dev1','ao0','Voltage');
+%         n = 0;
+%         pulse_cortex_tot_Probe = {};
+%         while n <= nb_pulsesProbe
+%             n=n+1;
+%             if get(hGui.RandomProbe,'value')
+%                 ecart_stim = round((LMinProbe+(LMaxProbe-LMinProbe).*rand(1))/esp_time);
+%             else
+%                 ecart_stim = round(InterPulseProbe/(esp_time*1.5));
+%             end
+%             pulse_cortex_Probe = cat(1,(0*time_single_pulse(1:ecart_stim)),(5+0*time_single_pulse(ecart_stim+1:length(time_single_pulse))));
+%             pulse_cortex_tot_Probe{n,1} = pulse_cortex_Probe;
+%         end
+%         
+%         % Remise à zéro des output
+%         pulse_cortex_tot_Probe{n+1,1} = 0*[0:esp_time:1]';
+%         
+%         % Préparation du signal à envoyer
+%         Output_Cortex = cell2mat(pulse_cortex_tot_Probe);
+%         queueOutputData(sProbe,Output_Cortex)
+%         
+%     elseif SelectionState == 2 && get(hGui.CheckCortexStim,'value') == 0 && get(hGui.CheckMuscleStim,'value') == 1
+%         % Update du status 
+%         disp('Stimulation du muscle en processus et AI1 est enregistré (Probe)')
+%         set(hGui.StatusText, 'String', 'Muscle stimulation selected. (Probe)');
+%         
+%         % Génération du signal de trigger
+%         addAnalogOutputChannel(sProbe,'Dev1','ao1','Voltage');
+%         n = 0;
+%         pulse_muscle_tot_Probe = {};
+%         while n <= nb_pulsesProbe 
+%             n=n+1;
+%             if get(hGui.RandomProbe,'value')
+%                 ecart_stim = round((LMinProbe+(LMaxProbe-LMinProbe).*rand(1))/esp_time);
+%             else
+%                 ecart_stim = round(InterPulseProbe/(esp_time*1.5));
+%             end
+%             pulse_muscle_Probe = cat(1,(0*time_single_pulse(1:ecart_stim)),(5+0*time_single_pulse(ecart_stim+1:length(time_single_pulse))));
+%             pulse_muscle_tot_Probe{n,1} = pulse_muscle_Probe;
+%         end
+%         
+%         % Remise à zéro des output
+%         pulse_muscle_tot_Probe{n+1,1} = 0*[0:esp_time:1]';
+%         
+%         % Préparation du signal de trigger pour le muscle à envoyé
+%         Output_Muscle = cell2mat(pulse_muscle_tot_Probe);
+%         queueOutputData(sProbe,Output_Muscle)
+%    
+%     elseif hGui.SelectionState == 7 && get(hGui.CheckCortexStim,'value') == 1 && get(hGui.CheckMuscleStim,'value') == 1
+%         % Update du status
+%         disp('Stimulation du cortex et des muscles en processus et AI0 à AI3 est enregistré (Probe)')
+%         set(hGui.StatusText, 'String', 'Probe cortex and muscle stimulations selected.');
+%         
+%         % Génération du signal
+%         addAnalogOutputChannel(sProbe,'Dev1','ao0','Voltage');
+%         addAnalogOutputChannel(sProbe,'Dev1','ao1','Voltage');
+%         n = 0;
+%         pulse_cortex_tot_Probe = {};
+%         pulse_muscle_tot_Probe = {};
+%         while n <= nb_pulsesProbe
+%             n=n+1;
+%             if get(hGui.RandomProbe,'value')
+%                 ecart_stim = round((LMinProbe+(LMaxProbe-LMinProbe).*rand(1))/esp_time);
+%             else
+%                 ecart_stim = round(InterPulseProbe/(esp_time*1.5));
+%             end
+%             pulse_cortex_Probe = cat(1,(0*time_single_pulse(1:ecart_stim)),(5+0*time_single_pulse(ecart_stim+1:length(time_single_pulse))));
+%             pulse_muscle_Probe = cat(1,(0*time_single_pulse(1:ecart_stim)),(5+0*time_single_pulse(ecart_stim+1:length(time_single_pulse))));
+%             pulse_cortex_tot_Probe{n,1} = pulse_cortex_Probe;
+%             pulse_muscle_tot_Probe{n,1} = pulse_muscle_Probe;
+%         end
+%         
+%         % Remise à zéro des output
+%         pulse_cortex_tot_Probe{n+1,1} = 0*[0:esp_time:1]';
+%         pulse_muscle_tot_Probe{n+1,1} = 0*[0:esp_time:1]';
+%         
+%         % Préparation des signals à envoyés
+%         Output_Cortex = cell2mat(pulse_cortex_tot_Probe);
+%         Output_Muscle = cell2mat(pulse_muscle_tot_Probe);
+%         queueOutputData(sProbe,[Output_Cortex Output_Muscle]);
+%     else
+%         error('Choose the appropriate selection that corresponds with the stimulation patern')
+%     end
+%     
+%  % ----- Envoi du Output et préparation à l'enregitrement -----
+%  
+%     tic
+%     % Envoi du trigger vers le AM systems
+%     startBackground(sProbe);
+%     TimeProbeProcessStart = toc;
+%     disp(TimeProbeProcessStart);
+%     set(hGui.StatusText, 'String', 'Le rat devrait bouger ahhahahah');
+%     wait(sProbe);
+%     set(hGui.StatusText, 'String', 'Manual cortex stimulation is done!');
+%     stop(sProbe);
+%     
+%     % Pause afin d'acquérir toutes les données nécessaires à la capture
+%     pause(TimeProbeProcessStart + InterPulseProbe);
+%     
+%     % Déterminer le moment où la première valeur de trigger a lieu
+%     if hGui.SelectionState == 1 && get(hGui.CheckCortexStim,'value') == 1 && get(hGui.CheckMuscleStim,'value') == 0
+%         MomentStimTrig = find(BufferSelectProbe(:,4)>4,1,'first');
+%     elseif hGui.SelectionState == 2 && get(hGui.CheckCortexStim,'value') == 0 && get(hGui.CheckMuscleStim,'value') == 1 
+%         MomentStimTrig = find(BufferSelectProbe(:,5)>4,1,'first');
+%     elseif hGui.SelectionState == 7 && get(hGui.CheckCortexStim,'value') == 1 && get(hGui.CheckMuscleStim,'value') == 1
+%         MomentStimTrig = find(BufferSelectProbe(:,4)>4,1,'first');
+%     end
+%     
+%     % Déterminer la valeur en temps où le trigger s'est produit
+%     MomentStimTime = BufferSelectProbe(MomentStimTrig,1);
+%     
+%     % Paramètres de dataEMG pour enregistrer les données selon les specs
+%     % voulues
+%     FirstEMG = round(MomentStimTrig - BeforeCapture*hGui.SourceRate);
+%     LastEMG = round(MomentStimTrig - BeforeCapture*hGui.SourceRate + (AfterCapture+BeforeCapture)*nb_pulsesProbe*hGui.SourceRate);
+%     dataEMGProbe = BufferSelectProbe(FirstEMG:LastEMG,:);
+%     
+%     % Applique la rectification temporel de la capture
+%     if get(hGui.ZeroRectification,'value')
+%        dataEMGProbe(:,1) = dataEMGProbe(:,1) - MomentStimTime;
+%     end
+%    
+%     % Sauvegarder les données dans un cell array qui incrémente selon le
+%     % nombre de fois que le bouton est pressé
+%     hGui.DataResponseProbe{hGui.NumPushTimeProbeTrain,1} = dataEMGProbe;
+%     ProbePushTimeString = num2str(hGui.NumPushTimeProbeTrain);
+%     hGui.DataTable.Data(hGui.NumPushTimeTotal,2) = cellstr(strcat('Probe ',ProbePushTimeString));
+%     hGui.DataTable.Data(:,4) = {false};
+%     hGui.DataTable.Data(hGui.NumPushTimeTotal,4) = {true};
+%  
+%     % On plot les dernières données du cell array
+%     CaptureData = hGui.DataResponseSingle{hGui.NumPushTimeProbeTrain,1};
+%     for jj = 1:numel(hGui.CapturePlot)
+%     set(hGui.CapturePlot(jj), 'XData', CaptureData(:,1), ...
+%                               'YData', CaptureData(:,1+jj))
+%     drawnow limitrate
+%     end
+%     
+%     % Reset du bouton et mise à jour des données gui
+%     set(hObject, 'value', 0);
+%     set(hGui.StatusText, 'String', 'Last Capture taken from Manual Stimulation!');
+%     guidata(gcbo,hGui);
+% end
+% end

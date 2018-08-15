@@ -2,6 +2,7 @@ function PAS_Interface_Acquisition(src, event, c)
 
 % Declaration de variable persistentes
 persistent dataBuffer dataBufferSelect %dataBufferProbe dataBufferSelectProbe
+global LiveBuffer
 
 % If dataCapture is running for the first time, initialize persistent vars
 hGui = guidata(gca);
@@ -25,45 +26,46 @@ if (numSamplesToDiscard > 0)
     dataBuffer(1:numSamplesToDiscard, :) = [];
 end
 
-% Enveloppe du signal EMG  et des données filtrées.
+% Données filtrées.
 [b,a] = butter(4,2*50/src.Rate,'high'); % High pass avec une freq de coupure à 50 Hz
 dataFiltered = filter(b,a,dataBuffer(:,2));
-[yupper,~] = envelope(dataFiltered,70,'peak');
-dataEnveloppe = abs(yupper);
-    
-if dataEnveloppe(end) < str2double(hGui.EMGWindowLow.String)/1000
-    hGui.FlagEMG = true;
-    set(hGui.FlagDisplay, 'string', 'Rising');
-elseif dataEnveloppe(end) > str2double(hGui.EMGWindowHigh.String)/1000
-    hGui.FlagEMG = false;
-    set(hGui.FlagDisplay, 'string', 'Falling');
-end
+dataDCRemove = dataBuffer(:,2)-mean(dataBuffer(:,2)); % Signal pas filtrer et on enlève le DC (baseline)
 
 % Display selection code for the live plot
 AIContSelect = get(hGui.ContSelect,'value');
 switch AIContSelect
-    case 1 % EMG + Trig Cortex + filtre
+    case 1 % EMG + Trig Cortex + Enveloppe
+        [dataEnveloppe,~] = envelope(dataFiltered,16,'peak'); % Enveloppe du signal
         dataBufferSelect = [dataBuffer(:,1),dataFiltered,dataEnveloppe,dataBuffer(:,3),NaN(length(dataBuffer(:,1)),1)];
         max_ylimit_value = max([max(abs(dataBufferSelect(round(0.1*src.Rate):end,2))),max(hGui.HighLine.YData)]);
         min_ylimit_value = -max_ylimit_value;
     case 2 % EMG + Trig Cortex
-        dataBufferSelect = [dataBuffer(:,1),dataBuffer(:,2),dataEnveloppe,dataBuffer(:,3),NaN(length(dataBuffer(:,1)),1)];
+        [dataEnveloppe,~] = envelope(dataDCRemove,16,'peak'); % Enveloppe du signal
+        dataBufferSelect = [dataBuffer(:,1),dataDCRemove,dataEnveloppe,dataBuffer(:,3),NaN(length(dataBuffer(:,1)),1)];
         max_ylimit_value = max(dataBufferSelect(round(0.1*src.Rate):end,2));
         min_ylimit_value = min(dataBufferSelect(round(0.1*src.Rate):end,2));
-    case 3 % EMG + Trig Muscle + filtre
+    case 3 % EMG + Trig Muscle + Enveloppe
+        [dataEnveloppe,~] = envelope(dataFiltered,16,'peak'); % Enveloppe du signal
         dataBufferSelect = [dataBuffer(:,1),dataFiltered,dataEnveloppe,NaN(length(dataBuffer(:,1)),1),dataBuffer(:,4)];
         max_ylimit_value = max([max(abs(dataBufferSelect(round(0.1*src.Rate):end,2))),max(hGui.HighLine.YData)]);
         min_ylimit_value = -max_ylimit_value;
     case 4 % EMG + Trig Muscle
-        dataBufferSelect = [dataBuffer(:,1),dataBuffer(:,2),NaN(length(dataBuffer(:,1)),2),dataBuffer(:,4)];
+        [dataEnveloppe,~] = envelope(dataDCRemove,16,'peak'); % Enveloppe du signal
+        dataBufferSelect = [dataBuffer(:,1),dataDCRemove,dataEnveloppe,NaN(length(dataBuffer(:,1)),1),dataBuffer(:,4)];
         max_ylimit_value = max(abs(dataBufferSelect(round(0.1*src.Rate):end,2)));
         min_ylimit_value = min(dataBufferSelect(round(0.1*src.Rate):end,2));
 end
 
+if dataEnveloppe(end) < str2double(hGui.EMGWindowLow.String)/1000
+    set(hGui.FlagDisplay, 'string', 'Rising');
+elseif dataEnveloppe(end) > str2double(hGui.EMGWindowHigh.String)/1000
+    set(hGui.FlagDisplay, 'string', 'Falling');
+end
+
 hGui.SelectionState = AIContSelect;
-hGui.BufferSelect = dataBufferSelect;
-% BufferSelect = dataBufferSelect; % Global = persistent (type de variable)
-% BufferSelectProbe = dataBufferSelectProbe;
+hGui.BufferSelect = dataBufferSelect; % Une fois guidata est callé, cet variable ne s'update plus en live. Utile pour avoir des informations sur la taille des données
+LiveBuffer = dataBufferSelect; %Par le global, le buffer est updater couramment. Utile pour avoir des données qui changenet dans le temps, mais pâs le plus efficace. 
+% Donc, on utilise le hGui.BufferSelect et LiveBuffer si c'est nécessaire (évaluer le niveau EMG)
 
 % Live plot has one line for each acquisition channel
 

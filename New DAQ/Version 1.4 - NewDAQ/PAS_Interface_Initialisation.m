@@ -25,7 +25,7 @@ Ch_ai2.Range = [-10,10];
 Ch_ai3.Range = [-10,10];
 
 % Paramètres de captures et de controles
-s.Rate = 6000; % Fréquence d'échantillonnage 
+s.Rate = 1000; % Fréquence d'échantillonnage 
 
 % La structure «capture» contient les informations reliées au buffer
 
