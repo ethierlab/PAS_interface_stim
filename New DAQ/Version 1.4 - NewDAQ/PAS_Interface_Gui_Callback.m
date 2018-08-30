@@ -828,11 +828,12 @@ if get(hObject, 'value')
         end
         
         Start_Time = toc;
+        fprintf('Train %d au temps %.3f \n',burst_sent,Start_Time);
         burst_sent = burst_sent + 1;
         set(hGui.StatusText, 'String', sprintf('PAS Experiment in progress (Train %d sent)',burst_sent));
         % Envoi du trigger au AM-Systems
         outputSingleScan(s_out,[1,1]);
-        pause(0.1);
+        pause(0.2);
         outputSingleScan(s_out,[0,0]);
         Process_Time = toc - Start_Time;
         
@@ -913,9 +914,16 @@ if get(hObject, 'value')
     hGui = guidata(gcbo);
     set(hGui.StatusText, 'String', 'Select the folder to save the data');
     SingleData = hGui.DataResponseSingle;
-    ProbeData = hGui.DataResponseProbe;
     ProbeEMGData = hGui.DataResponseProbeEMG;
-    uisave({'SingleData ','ProbeData','ProbeEMGData'},'');
+    if isempty(SingleData)
+        uisave({'ProbeEMGData'},'');
+    elseif isempty(ProbeEMGData)
+        uisave({'SingleData'},'');
+    elseif isempty(SingleData) && isempty(ProbeEMGData)
+        set(hGui.StatusText, 'String', 'No data to save! Check wires connections and signal trigger for acquisition');
+    else
+        uisave({'SingleData','ProbeEMGData'},'');
+    end
     guidata(gcbo,hGui);
 end
 end
@@ -989,6 +997,14 @@ end
 % analog output pour construire le signal de trigger. Utilisation non
 % recommandé.
 
+% À ajouter à la ligne 14 de PAS_Interface_Acquisition
+% if get(hGui.RandomProbe,'value')
+%     BufferSizeProbe = (round(str2double(hGui.MaxProbeTime.String)*str2double(hGui.PulseProbe.String)+5)*src.Rate);
+% else
+%     BufferSizeProbe = (round(str2double(hGui.InterProbe.String)*str2double(hGui.PulseProbe.String)+5)*src.Rate);
+% end
+
+% Enlever les % pour avoir le callback, et remplacer le callback d'un bouton par cet function
 % function startProbe(hObject,~,~)
 % 
 % if get(hObject, 'value')

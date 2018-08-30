@@ -380,8 +380,8 @@ if get(hObject, 'value')
     % trigger selon les paramètres choisis.
     
     sManual = daq.createSession('ni');
-    addDigitalChannel(sManual,'Dev1', 'Port0/Line0', 'OutputOnly');
-    addDigitalChannel(sManual,'Dev1', 'Port0/Line1', 'OutputOnly');
+    addDigitalChannel(sManual,'Dev2', 'Port0/Line0', 'OutputOnly');
+    addDigitalChannel(sManual,'Dev2', 'Port0/Line1', 'OutputOnly');
     set(hGui.StatusText, 'String', 'Determination of the threshold for Max MEP');
     
     % Comptage du nombre de fois que le bouton est poussé
@@ -534,6 +534,7 @@ function startProbeEMG(hObject,~,~)
 
 if get(hObject, 'value')
     hGui = guidata(gcbo);
+    drawnow
     set(hGui.StatusText, 'String', 'Probe stimulation in progress.');
     persistent WindowEMG AllDataCollected
     global BufferSelect SelectionState FlagEMG
@@ -541,8 +542,8 @@ if get(hObject, 'value')
     % Enregistrement dans des variables le contenu des cases de la
     % section Probe
     InterPulseProbe = str2double(hGui.InterProbe.String);
-    LMinProbe = str2double(hGui.MinProbeTime.String);
-    LMaxProbe = str2double(hGui.MaxProbeTime.String);
+%     LMinProbe = str2double(hGui.MinProbeTime.String);
+%     LMaxProbe = str2double(hGui.MaxProbeTime.String);
     nb_pulsesProbe = round(str2double(hGui.PulseProbe.String));
     BeforeCapture = str2double(hGui.BeforeStim.String)/1000;
     AfterCapture = str2double(hGui.AfterStim.String)/1000;
@@ -550,20 +551,20 @@ if get(hObject, 'value')
     WindowEMGLast = round(length(BufferSelect(:,1)) - str2double(hGui.EMGTime.String)*hGui.SourceRate/1000);
     
     % Vérification des temps s'ils sont réalistes ou pas
-    if get(hGui.RandomProbe,'value')
-        if LMinProbe < (BeforeCapture + AfterCapture)
-            err('La valeur minimale des trains aléatoire est plus petite que la fênetre capturée (avant et après capture)')
-        end
-    else
-        if InterPulseProbe < (BeforeCapture + AfterCapture)
-            err('La durée de inter-train est plus petite que la fênetre capturée (avant et après capture)')
-        end
-    end
+%     if get(hGui.RandomProbe,'value')
+%         if LMinProbe < (BeforeCapture + AfterCapture)
+%             err('La valeur minimale des trains aléatoire est plus petite que la fênetre capturée (avant et après capture)')
+%         end
+%     else
+if InterPulseProbe < (BeforeCapture + AfterCapture)
+    err('La durée de inter-train est plus petite que la fênetre capturée (avant et après capture)')
+end
+%     end
     
     % Initialisation d'une sesion pour ajouter les sorties digitales
     sProbeEMG = daq.createSession('ni');
-    addDigitalChannel(sProbeEMG,'Dev1', 'Port0/Line0', 'OutputOnly');
-    addDigitalChannel(sProbeEMG,'Dev1', 'Port0/Line1', 'OutputOnly');
+    addDigitalChannel(sProbeEMG,'Dev2', 'Port0/Line0', 'OutputOnly');
+    addDigitalChannel(sProbeEMG,'Dev2', 'Port0/Line1', 'OutputOnly');
     
     % Boucle while afin de calculer en continue le code s'il atteint les
     % conditions ou pas
@@ -724,8 +725,8 @@ if get(hObject, 'value')
     hGui = guidata(gcbo);
     set(hGui.StatusText, 'String', 'PAS Experiment in progress.');
     sPAS = daq.createSession('ni');
-    addDigitalChannel(sPAS,'Dev1', 'Port0/Line0', 'OutputOnly');
-    addDigitalChannel(sPAS,'Dev1', 'Port0/Line1', 'OutputOnly');
+    addDigitalChannel(sPAS,'Dev2', 'Port0/Line0', 'OutputOnly');
+    addDigitalChannel(sPAS,'Dev2', 'Port0/Line1', 'OutputOnly');
     
     InterPulsePAS = str2double(hGui.InterPAS.String);
     LMinPAS = str2double(hGui.MinPAS.String);

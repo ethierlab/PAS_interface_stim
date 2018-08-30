@@ -4,10 +4,10 @@ global s
 s = daq.createSession('ni');
 
 %Le Dev1 est le nom du daq
-ai0=addAnalogInputChannel(s,'Dev1','ai0','Voltage'); % EMG
+ai0=addAnalogInputChannel(s,'Dev2','ai0','Voltage'); % EMG
 %ai1=addAnalogInputChannel(s,'Dev1','ai1','Voltage');
-ai2=addAnalogInputChannel(s,'Dev1','ai2','Voltage'); % Trigger Cortex
-ai3=addAnalogInputChannel(s,'Dev1','ai3','Voltage'); % Trigger Muscle
+ai2=addAnalogInputChannel(s,'Dev2','ai2','Voltage'); % Trigger Cortex
+ai3=addAnalogInputChannel(s,'Dev2','ai3','Voltage'); % Trigger Muscle
 
 % Set acquisition configuration for each channel
 ai0.TerminalConfig = 'SingleEnded';
@@ -20,7 +20,7 @@ ai3.TerminalConfig = 'SingleEnded';
 % Specify the desired parameters for data capture and live plotting.
 % The data capture parameters are grouped in a structure data type,
 % as this makes it simpler to pass them as a function argument.
-s.Rate = 1500;
+s.Rate = 6000;
 
 % Specify triggered capture timespan, in secondss
 capture.TimeSpan = 1;    % \/\/ À CONVERTIR DANS PARAMS PLUS TARD \/\/

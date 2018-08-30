@@ -45,13 +45,15 @@ end
 
 [b,a] = butter(4,2*50/src.Rate,'high'); % High pass avec une freq de coupure à 50 Hz
 dataFiltered = filter(b,a,dataBuffer(:,2));
-[yupper,~] = envelope(dataFiltered,20,'peak'); %50,'rms'
+[yupper,~] = envelope(dataFiltered,70,'peak'); %50,'rms'
 dataEnveloppe = abs(yupper);
     
 if dataEnveloppe() < str2double(hGui.EMGWindowLow.String)/1000
     FlagEMG = true;
+    set(hGui.FlagDisplay, 'string', 'Rising');
 elseif dataEnveloppe(end) > str2double(hGui.EMGWindowHigh.String)/1000
     FlagEMG = false;
+    set(hGui.FlagDisplay, 'string', 'Falling');
 end
 
 % [yupper,~] = envelope(dataBuffer(:,2),150,'rms');
