@@ -1,3 +1,4 @@
+
 function PAS_Interface_Acquisition(src, event, c)
 
 % Declaration de variable persistentes
@@ -9,7 +10,7 @@ hGui = guidata(gca);
 if event.TimeStamps(1) == 0
     dataBuffer = [];          % data buffer
     dataBufferSelect = [];    % data buffer with selected colums to display
-    enddr
+end
 
 % Store continuous acquisition data in persistent FIFO buffer dataBuffer
 % (display and single scan)
@@ -30,22 +31,22 @@ dataDCRemove = dataBuffer(:,2)-mean(dataBuffer(:,2)); % Signal pas filtrer et on
 AIContSelect = get(hGui.ContSelect,'value'); %Sert à obtenir la valeur de la sélection, ce qui permet de changer les options
 switch AIContSelect % Le switch case est c'est qui permet le changement dans les menus défilants. Il doit avoir le même nombre de cases que d'options
     case 1 % EMG High Pass 50 Hz + Trig Cortex
-        [dataEnveloppe,~] = envelope(dataFiltered,16,'peak'); % Enveloppe du signal
+        [dataEnveloppe,~] = envelope(dataFiltered,32,'peak'); % Enveloppe du signal
         dataBufferSelect = [dataBuffer(:,1),dataFiltered,dataEnveloppe,dataBuffer(:,3),NaN(length(dataBuffer(:,1)),1)]; % Buffer spécifique à la sélection
         max_ylimit_value = max([max(abs(dataBufferSelect(round(0.1*src.Rate):end,2))),max(hGui.HighLine.YData)]); % Limite maximun de l'axe y (positive), on compare la valeur max du buffer avec la valeur de la ligne haute 
         min_ylimit_value = -max_ylimit_value; % La limite minimun (négative) correspond à l'inverse due la limite max
     case 2 % EMG DC Remove + Trig Cortex
-        [dataEnveloppe,~] = envelope(dataDCRemove,16,'peak'); % Enveloppe du signal
+        [dataEnveloppe,~] = envelope(dataDCRemove,32,'peak'); % Enveloppe du signal
         dataBufferSelect = [dataBuffer(:,1),dataDCRemove,dataEnveloppe,dataBuffer(:,3),NaN(length(dataBuffer(:,1)),1)]; % Buffer spécifique à la sélection
         max_ylimit_value = max(dataBufferSelect(round(0.1*src.Rate):end,2)); % Limite maximun de l'axe y (positive) correspond à la valeur max du buffer
         min_ylimit_value = min(dataBufferSelect(round(0.1*src.Rate):end,2)); % Limite minimun de l'axe y (positive) correspond à la valeur min du buffer
     case 3 % EMG High Pass 50 Hz + Trig Muscle
-        [dataEnveloppe,~] = envelope(dataFiltered,16,'peak'); % Enveloppe du signal
+        [dataEnveloppe,~] = envelope(dataFiltered,32,'peak'); % Enveloppe du signal
         dataBufferSelect = [dataBuffer(:,1),dataFiltered,dataEnveloppe,NaN(length(dataBuffer(:,1)),1),dataBuffer(:,4)]; % Buffer spécifique à la sélection 
         max_ylimit_value = max([max(abs(dataBufferSelect(round(0.1*src.Rate):end,2))),max(hGui.HighLine.YData)]); % Limite maximun de l'axe y (positive), on compare la valeur max du buffer avec la valeur de la ligne haute
         min_ylimit_value = -max_ylimit_value; % La limite minimun (négative) correspond à l'inverse due la limite max
     case 4 % EMG DC Remove + Trig Muscle
-        [dataEnveloppe,~] = envelope(dataDCRemove,16,'peak'); % Enveloppe du signal
+        [dataEnveloppe,~] = envelope(dataDCRemove,32,'peak'); % Enveloppe du signal
         dataBufferSelect = [dataBuffer(:,1),dataDCRemove,dataEnveloppe,NaN(length(dataBuffer(:,1)),1),dataBuffer(:,4)]; % Buffer spécifique à la sélection
         max_ylimit_value = max(dataBufferSelect(round(0.1*src.Rate):end,2)); % Limite maximun de l'axe y (positive) correspond à la valeur max du buffer
         min_ylimit_value = min(dataBufferSelect(round(0.1*src.Rate):end,2)); % Limite minimun de l'axe y (positive) correspond à la valeur min du buffer

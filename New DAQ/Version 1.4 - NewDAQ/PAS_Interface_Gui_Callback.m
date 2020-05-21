@@ -571,9 +571,9 @@ function BaselineEMG(hObject,~,~)
 if get(hObject, 'value')
     hGui = guidata(gcbo);
     persistent dataBaseline
-    Duree_Baseline = 1;
+    Duree_Baseline = 2;
     NombreFoisSTD_Bas = 2;
-    NombreFoisSTD_Haut = 7;
+    NombreFoisSTD_Haut = 12;
     First_Baseline_Value = round((1-((Duree_Baseline*hGui.SourceRate)/length(hGui.BufferSelect(:,1))))*length(hGui.BufferSelect(:,1)));
     dataBaseline = hGui.BufferSelect(First_Baseline_Value:end,3);
     moyenne_baseline = mean(dataBaseline);
@@ -848,14 +848,14 @@ if get(hObject, 'value')
                 Random_time = Time_Random_Left - Random_Process_time;
                 pause(Random_time);
             else
-                err('Please review the value of the Minimun Random Time of the PAS edit box');
+                error('Please review the value of the Minimun Random Time of the PAS edit box');
             end
         else
             if Process_Time < InterPulsePAS
                 Inter_Process_time = toc - Start_Time;
                 pause(InterPulsePAS - Inter_Process_time - 0.017); %Ajustement pour "normalisé" le temps, nécessaire?
             else
-                err('Please review the value of the Inter-Train Time of the PAS edit box');
+                error('Please review the value of the Inter-Train Time of the PAS edit box');
             end
         end
     end
